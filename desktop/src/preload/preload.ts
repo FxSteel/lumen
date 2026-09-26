@@ -35,4 +35,14 @@ contextBridge.exposeInMainWorld("nova", {
   onStageConfig: (callback: (data: StageConfig) => void) => {
     ipcRenderer.on("nova:stageConfig", (_event, data: StageConfig) => callback(data));
   },
+  // LATENCY: resuelve una URL remota a su ruta local cacheada (file://) vía el
+  // cache de disco del main. Ante cualquier fallo devuelve la URL original.
+  resolveAsset: async (url: string): Promise<string> => {
+    try {
+      const resolved = await ipcRenderer.invoke("nova:resolveAsset", url);
+      return typeof resolved === "string" && resolved ? resolved : url;
+    } catch {
+      return url;
+    }
+  },
 });
