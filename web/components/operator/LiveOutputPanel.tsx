@@ -313,7 +313,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
                   fontWeight: typeof slideData.fontWeight === 'number' ? slideData.fontWeight : undefined,
                 })
                 const transition = transitionTypeRef.current
-                bridge.sendSlide('main', { ...slideData, typography: resolvedTypography, textAlign: 'center', transitionType: transition, transition })
+                bridge.sendSlide('main', { ...slideData, type: slideData.slideType, typography: resolvedTypography, textAlign: 'center', transitionType: transition, transition })
                 bridge.sendSlide('stage', { reference: slideData.label, type: slideData.slideType, typography: resolvedTypography, textAlign: 'center', transitionType: transition, transition })
               }
             } catch { /* ignore */ }

@@ -16,7 +16,7 @@ import path from "path";
 import fs from "fs";
 import { app } from "electron";
 import type { SlideData, SongBackground, DisplayMode, NdiOutput } from "@nova/shared";
-import { resolveTypography } from "@nova/shared";
+import { resolveTypography, novaSizeToVw } from "@nova/shared";
 
 // Re-export the shared NdiOutput type so existing importers (e.g. main.ts,
 // which does `import type { NdiOutput } from "./main/ndiManager"`) keep working
@@ -360,19 +360,31 @@ export function ndiHandleSlide(slide: SlideData) {
     const lh        = typo.lineHeight;
     const fw        = typo.fontWeight;
     const align     = (typo.textAlign ?? "center") as CanvasTextAlign;
-    const fontSizePx = Math.round((fsScale / 100) * 5 * NDI_WIDTH / 100);
+    // Same scale formula as the kiosk (novaSizeToVw at 1920) → exact size parity.
+    const fontSizePx = Math.round(novaSizeToVw(fsScale) * NDI_WIDTH / 100);
     // Quote the family (some — "Open Sans", "Roboto Flex" — contain spaces);
     // sans-serif fallback keeps text visible if the font isn't packaged yet.
     const fontStack = `"${typo.fontFamily}", sans-serif`;
 
-    ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
-    ctx.shadowBlur  = 8;
+    // Honor textShadow on/off from the slide (node-canvas can't parse a CSS
+    // shadow shorthand, so we approximate: shadow present → soft dark shadow).
+    if (typo.textShadow) {
+      ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+      ctx.shadowBlur  = 8;
+    } else {
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur  = 0;
+    }
     ctx.fillStyle   = typo.color;
     ctx.font        = `${fw} ${fontSizePx}px ${fontStack}`;
     ctx.textAlign   = align;
     ctx.textBaseline = "middle";
 
-    const lines  = text.split("\n");
+    // Apply textTransform to match the kiosk.
+    const shown = typo.textTransform === "uppercase" ? text.toUpperCase()
+                : typo.textTransform === "lowercase" ? text.toLowerCase()
+                : text;
+    const lines  = shown.split("\n");
     const lineH  = fontSizePx * lh;
     const startY = NDI_HEIGHT / 2 - ((lines.length - 1) * lineH) / 2;
     const x      = align === "left" ? 80 : align === "right" ? NDI_WIDTH - 80 : NDI_WIDTH / 2;

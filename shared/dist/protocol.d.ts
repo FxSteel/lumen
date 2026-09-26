@@ -4,7 +4,7 @@
  * Mensajes tipados y versionados. Un cambio incompatible sube PROTOCOL_VERSION.
  * El handshake `hello` deja que ambos lados negocien versión y capacidades.
  */
-import type { OutputRole, SlideData, DisplayMode, SongBackground, DisplayMedia, StageTime, StageMessage, StageConfig, NdiOutput, DisplayScreen, ScreenAssignment } from './contract';
+import type { OutputRole, SlideData, NdiOutput, DisplayScreen, BackgroundType, MediaType } from './contract';
 /** Sube este número ante cualquier cambio incompatible del protocolo. */
 export declare const PROTOCOL_VERSION = 1;
 /** Puerto del servidor WebSocket local que expone el shell nativo. */
@@ -16,40 +16,50 @@ export type ClientMessage = {
     type: 'get-screens';
 } | {
     type: 'display-slide';
-    role: OutputRole;
+    screen: OutputRole;
     slide: SlideData;
 } | {
     type: 'display-mode';
-    payload: DisplayMode;
+    mode: 'slide' | 'clear' | 'logo' | 'announcement';
+    logoUrl?: string;
+    announcementUrl?: string;
 } | {
     type: 'song-background';
-    payload: SongBackground;
+    backgroundType: BackgroundType;
+    backgroundUrl: string | null;
 } | {
     type: 'display-media';
-    payload: DisplayMedia;
+    mediaType: MediaType;
+    url: string;
 } | {
     type: 'preload-media';
-    payload: DisplayMedia;
+    mediaType: MediaType;
+    url: string;
 } | {
     type: 'stage-time';
-    payload: StageTime;
+    time: string;
 } | {
     type: 'stage-message';
-    payload: StageMessage;
+    message: string;
 } | {
     type: 'stage-config';
-    payload: StageConfig;
+    showTime: boolean;
+    showMessage: boolean;
 } | {
     type: 'ndi-config';
     outputs: NdiOutput[];
 } | {
     type: 'assign-screen';
-    payload: ScreenAssignment;
+    screenId: string;
+    role: OutputRole;
 } | {
     type: 'close-screen';
     screenId: string;
 } | {
     type: 'ping';
+    t: number;
+} | {
+    type: 'pong';
     t: number;
 };
 export type ServerMessage = {

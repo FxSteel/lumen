@@ -6,8 +6,7 @@
  */
 
 import type {
-  OutputRole, SlideData, DisplayMode, SongBackground, DisplayMedia,
-  StageTime, StageMessage, StageConfig, NdiOutput, DisplayScreen, ScreenAssignment,
+  OutputRole, SlideData, NdiOutput, DisplayScreen, BackgroundType, MediaType,
 } from './contract';
 
 /** Sube este número ante cualquier cambio incompatible del protocolo. */
@@ -17,21 +16,24 @@ export const PROTOCOL_VERSION = 1;
 export const WS_PORT = 9877;
 
 // ─── Mensajes web → nativo ─────────────────────────────────────────────────────
+// Formato PLANO — refleja el cable real que envía el bridge y parsea el servidor.
+// (No usar sobres `payload`; ambos lados hablan plano.)
 export type ClientMessage =
   | { type: 'hello'; protocolVersion: number }
   | { type: 'get-screens' }
-  | { type: 'display-slide'; role: OutputRole; slide: SlideData }
-  | { type: 'display-mode'; payload: DisplayMode }
-  | { type: 'song-background'; payload: SongBackground }
-  | { type: 'display-media'; payload: DisplayMedia }
-  | { type: 'preload-media'; payload: DisplayMedia }
-  | { type: 'stage-time'; payload: StageTime }
-  | { type: 'stage-message'; payload: StageMessage }
-  | { type: 'stage-config'; payload: StageConfig }
+  | { type: 'display-slide'; screen: OutputRole; slide: SlideData }
+  | { type: 'display-mode'; mode: 'slide' | 'clear' | 'logo' | 'announcement'; logoUrl?: string; announcementUrl?: string }
+  | { type: 'song-background'; backgroundType: BackgroundType; backgroundUrl: string | null }
+  | { type: 'display-media'; mediaType: MediaType; url: string }
+  | { type: 'preload-media'; mediaType: MediaType; url: string }
+  | { type: 'stage-time'; time: string }
+  | { type: 'stage-message'; message: string }
+  | { type: 'stage-config'; showTime: boolean; showMessage: boolean }
   | { type: 'ndi-config'; outputs: NdiOutput[] }
-  | { type: 'assign-screen'; payload: ScreenAssignment }
+  | { type: 'assign-screen'; screenId: string; role: OutputRole }
   | { type: 'close-screen'; screenId: string }
-  | { type: 'ping'; t: number };
+  | { type: 'ping'; t: number }
+  | { type: 'pong'; t: number };
 
 // ─── Mensajes nativo → web ─────────────────────────────────────────────────────
 export type ServerMessage =
