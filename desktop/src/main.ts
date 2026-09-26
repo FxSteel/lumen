@@ -12,6 +12,7 @@ import {
   ndiHandleDisplayMode,
   ndiHandleBackground,
   destroyAllNdiSenders,
+  isNdiAvailable,
 } from "./main/ndiManager";
 import type { NdiOutput } from "./main/ndiManager";
 
@@ -146,9 +147,8 @@ function onCloseScreen(screenId: string) {
 }
 
 // Capacidades que el nativo reporta a la web (para que el operador vea salud real).
-// TODO(integración): cablear ndiAvailable desde ndiManager en lugar de false.
 function getCapabilities(): ServerCapabilities {
-  return { version: app.getVersion(), ndiAvailable: false };
+  return { version: app.getVersion(), ndiAvailable: isNdiAvailable() };
 }
 
 // Errores del servidor WS. EADDRINUSE = otra instancia (o proceso zombie) tiene el 9877.
