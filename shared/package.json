@@ -1,5 +1,5 @@
 {
-  "name": "@nova/shared",
+  "name": "@lumen/shared",
   "version": "0.1.0",
   "private": true,
   "description": "Contrato compartido (tipos + protocolo + motor de tipografía) entre web y shell nativo",

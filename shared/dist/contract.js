@@ -1,9 +1,9 @@
 "use strict";
 /**
- * NOVA · Contrato compartido web ↔ shell nativo
+ * Lumen · Contrato compartido web ↔ shell nativo
  * ─────────────────────────────────────────────
  * Fuente ÚNICA de verdad de qué se envía y cómo se debe pintar.
- * Lo importan tanto la web (mandarin → web/) como el shell nativo (display-nova → desktop/).
+ * Lo importan tanto la web (mandarin → web/) como el shell nativo (display-lumen → desktop/).
  *
  * Regla: las "primitivas de fidelidad" (color, fuente, tamaño, peso, tracking,
  * sombra, transform, transición) viven AQUÍ y se aplican con UN solo motor.

@@ -16,7 +16,7 @@ import {
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { LiveOutputBroadcaster } from '@/lib/broadcast'
-import { getGlobalBridge } from '@/lib/display-nova-bridge'
+import { getGlobalBridge } from '@/lib/lumen-bridge'
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500 MB
 const BUCKET = 'workspace-media'

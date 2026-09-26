@@ -6,7 +6,7 @@ import { SongSlide } from '@/lib/store'
 import { getBibleVersions, getBibleBooks, getChapter, type BibleVersion, type Book, type ChapterData, type VerseRange } from '@/lib/youversion'
 import { useAppStore } from '@/lib/store'
 import { LiveOutputBroadcaster } from '@/lib/broadcast'
-import { getGlobalBridge } from '@/lib/display-nova-bridge'
+import { getGlobalBridge } from '@/lib/lumen-bridge'
 import { useWorkspace } from '@/lib/workspace-provider'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -356,7 +356,7 @@ export default function BibleBrowser({ onVerseAdd }: BibleBrowserProps) {
       broadcasterRef.current.sendSlideChange(broadcastSlide)
       console.log('[BIBLE] Broadcasting verse completed')
 
-      // Also send to Display-Nova bridge (native app)
+      // Also send to Lumen bridge (native app)
       const bridge = getGlobalBridge()
       if (bridge?.isConnected) {
         bridge.sendDisplayMode('slide')
@@ -379,7 +379,7 @@ export default function BibleBrowser({ onVerseAdd }: BibleBrowserProps) {
           contentPadding: 80,
           transitionType,
         })
-        console.log('[BIBLE] Sent verse to Display-Nova bridge')
+        console.log('[BIBLE] Sent verse to Lumen bridge')
       }
     } else {
       console.error('[BIBLE] Broadcaster ref is null!')

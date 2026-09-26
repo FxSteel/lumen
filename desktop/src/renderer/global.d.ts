@@ -2,7 +2,7 @@ import type { DisplayInfo, SlideData, DisplayMode, SongBackground, DisplayMedia,
 
 declare global {
   interface Window {
-    nova: {
+    lumen: {
       getDisplays: () => Promise<DisplayInfo[]>;
       openOutput: (displayId: number) => Promise<boolean>;
       onSlide: (callback: (slide: SlideData) => void) => void;

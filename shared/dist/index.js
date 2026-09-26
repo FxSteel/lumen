@@ -15,7 +15,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
- * NOVA · Paquete compartido — punto de entrada único.
+ * Lumen · Paquete compartido — punto de entrada único.
  * Lo importan web/ (Next.js) y desktop/ (Electron shell).
  */
 __exportStar(require("./contract"), exports);

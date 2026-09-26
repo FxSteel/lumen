@@ -1,8 +1,8 @@
-# NOVA Display — packaged fonts (NDI renderer)
+# Lumen Display — packaged fonts (NDI renderer)
 
 The NDI output manager (`desktop/src/main/ndiManager.ts`) renders lyric/verse
 frames with **node-canvas**. For those frames to match the web renderer
-(fidelity), the exact fonts NOVA supports must be registered with node-canvas
+(fidelity), the exact fonts Lumen supports must be registered with node-canvas
 via `registerFont(path, { family, weight })`, and the renderer must expose the
 same faces through `@font-face`.
 
@@ -18,8 +18,8 @@ until the real binaries are present.
 ## Supported families → weights → filenames
 
 Families are the ones `resolveTypography()` emits (`SUPPORTED_FONTS` in
-`@nova/shared`: Inter, Poppins, Montserrat, Roboto Flex, Open Sans). Weights
-used by NOVA slides: **400 Regular · 500 Medium · 600 SemiBold · 700 Bold**.
+`@lumen/shared`: Inter, Poppins, Montserrat, Roboto Flex, Open Sans). Weights
+used by Lumen slides: **400 Regular · 500 Medium · 600 SemiBold · 700 Bold**.
 
 | Family        | Weight | Filename (required)        |
 |---------------|--------|----------------------------|
@@ -67,7 +67,7 @@ is resolved:
 1. **Add the 20 real `.ttf` binaries** to this directory (licensing: all five
    families are OFL/Apache — redistributable with the app).
 2. **Include this folder in packaged builds.** `desktop/electron-builder.json`
-   currently copies only `assets/nova.png` via `extraResources`. Add:
+   currently copies only `assets/lumen.png` via `extraResources`. Add:
    ```json
    { "from": "assets/fonts", "to": "assets/fonts" }
    ```

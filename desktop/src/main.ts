@@ -6,7 +6,7 @@ import { startWsServer, stopWsServer } from "./main/wsServer";
 import * as assetCache from "./main/assetCache";
 import type { SlideData, DisplayMode, SongBackground, DisplayMedia, StageTime, StageMessage, StageConfig } from "./shared/display";
 import type { ScreenAssignment } from "./main/wsServer";
-import type { ServerCapabilities } from "@nova/shared";
+import type { ServerCapabilities } from "@lumen/shared";
 import {
   handleNdiConfig,
   ndiHandleSlide,
@@ -42,8 +42,8 @@ function preloadUrl() {
 
 function trayIconPath() {
   return isDev
-    ? path.join(__dirname, "../../assets/nova.png")
-    : path.join(process.resourcesPath, "assets/nova.png");
+    ? path.join(__dirname, "../../assets/lumen.png")
+    : path.join(process.resourcesPath, "assets/lumen.png");
 }
 
 function createTray(preloadPath: string) {
@@ -54,10 +54,10 @@ function createTray(preloadPath: string) {
     icon = nativeImage.createFromNamedImage("NSImageNameComputer", [16, 16]).resize({ width: 16, height: 16 });
   }
   tray = new Tray(icon);
-  tray.setToolTip("NOVA Display");
+  tray.setToolTip("Lumen Display");
 
   const menu = Menu.buildFromTemplate([
-    { label: "NOVA Display", enabled: false },
+    { label: "Lumen Display", enabled: false },
     { type: "separator" },
     { label: "Abrir Setup", click: () => createSetupWindow(rendererUrl("setup"), preloadUrl()) },
     { type: "separator" },
@@ -71,7 +71,7 @@ function createTray(preloadPath: string) {
 function onSlide(slide: SlideData, role: string) {
   console.log(`[Main] Forwarding slide to role="${role}"`);
   lastSlide.set(role, slide);
-  sendToOutputWindow(role, "nova:slide", slide);
+  sendToOutputWindow(role, "lumen:slide", slide);
   ndiHandleSlide(slide);
 }
 
@@ -101,16 +101,16 @@ function onSongBackground(bg: SongBackground) {
   lastBackground = bg;
   // LATENCY: calentar el fondo en disco antes de proyectar (fire-and-forget).
   if (bg.backgroundUrl) assetCache.prefetch(bg.backgroundUrl);
-  sendToOutputWindow("main", "nova:songBackground", bg);
-  sendToOutputWindow("stage", "nova:songBackground", bg);
+  sendToOutputWindow("main", "lumen:songBackground", bg);
+  sendToOutputWindow("stage", "lumen:songBackground", bg);
   ndiHandleBackground(bg);
 }
 
 function onDisplayMode(displayMode: DisplayMode) {
   console.log(`[Main] display-mode → ${displayMode.mode}`);
   lastMode = displayMode;
-  sendToOutputWindow("main", "nova:displayMode", displayMode);
-  sendToOutputWindow("stage", "nova:displayMode", displayMode);
+  sendToOutputWindow("main", "lumen:displayMode", displayMode);
+  sendToOutputWindow("stage", "lumen:displayMode", displayMode);
   ndiHandleDisplayMode(displayMode);
 }
 
@@ -119,28 +119,28 @@ function onNdiConfig(outputs: unknown[]) {
 }
 
 function onStageTime(data: StageTime) {
-  sendToOutputWindow("stage", "nova:stageTime", data);
+  sendToOutputWindow("stage", "lumen:stageTime", data);
 }
 
 function onStageMessage(data: StageMessage) {
-  sendToOutputWindow("stage", "nova:stageMessage", data);
+  sendToOutputWindow("stage", "lumen:stageMessage", data);
 }
 
 function onStageConfig(data: StageConfig) {
-  sendToOutputWindow("stage", "nova:stageConfig", data);
+  sendToOutputWindow("stage", "lumen:stageConfig", data);
 }
 
 function onDisplayMedia(media: DisplayMedia) {
   console.log(`[Main] display-media → ${media.mediaType} ${media.url}`);
   lastMedia = media;
-  sendToOutputWindow("main", "nova:displayMedia", media);
+  sendToOutputWindow("main", "lumen:displayMedia", media);
 }
 
 function onPreloadMedia(media: DisplayMedia) {
   console.log(`[Main] preload-media → ${media.mediaType} ${media.url}`);
   // LATENCY: calentar la media en disco antes de proyectar (fire-and-forget).
   if (media.url) assetCache.prefetch(media.url);
-  sendToOutputWindow("main", "nova:preloadMedia", media);
+  sendToOutputWindow("main", "lumen:preloadMedia", media);
 }
 
 function onCloseScreen(screenId: string) {
@@ -160,11 +160,11 @@ function getCapabilities(): ServerCapabilities {
 function onWsError(err: NodeJS.ErrnoException) {
   if (err.code === "EADDRINUSE") {
     const notice =
-      "[Main] El puerto 9877 ya está en uso — otra instancia de NOVA (o un proceso previo) " +
+      "[Main] El puerto 9877 ya está en uso — otra instancia de Lumen (o un proceso previo) " +
       "sigue escuchando. El servidor WebSocket NO arrancó. Cierra la otra instancia y reinicia.";
     console.error(notice);
     if (tray) {
-      tray.setToolTip("NOVA Display — ERROR: puerto 9877 en uso (WS no disponible)");
+      tray.setToolTip("Lumen Display — ERROR: puerto 9877 en uso (WS no disponible)");
     }
     // No crashear: la app sigue viva en el tray para que el usuario pueda reaccionar.
     return;
@@ -173,16 +173,16 @@ function onWsError(err: NodeJS.ErrnoException) {
 }
 
 // El renderer avisa cuando ya registró sus listeners — reenviar el último estado
-ipcMain.on("nova:outputReady", (event) => {
+ipcMain.on("lumen:outputReady", (event) => {
   const role = getRoleForWebContents(event.sender.id);
   if (!role) return;
   console.log(`[Main] Output window ready for role="${role}" — replaying cached state`);
 
-  if (lastBackground) event.sender.send("nova:songBackground", lastBackground);
-  if (lastMedia) event.sender.send("nova:displayMedia", lastMedia);
-  event.sender.send("nova:displayMode", lastMode);
+  if (lastBackground) event.sender.send("lumen:songBackground", lastBackground);
+  if (lastMedia) event.sender.send("lumen:displayMedia", lastMedia);
+  event.sender.send("lumen:displayMode", lastMode);
   const slide = lastSlide.get(role);
-  if (slide) event.sender.send("nova:slide", slide);
+  if (slide) event.sender.send("lumen:slide", slide);
 });
 
 async function bootstrap() {
@@ -191,7 +191,7 @@ async function bootstrap() {
   const preloadPath = preloadUrl();
   // LATENCY: resolver de assets → cache de disco del main. ensureCached nunca
   // lanza; devuelve una ruta file:// local o la URL original como fallback.
-  ipcMain.handle("nova:resolveAsset", async (_event, url: string) => {
+  ipcMain.handle("lumen:resolveAsset", async (_event, url: string) => {
     return assetCache.ensureCached(url);
   });
   initWindowManager(rendererUrl("output"), preloadPath);

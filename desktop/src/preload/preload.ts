@@ -1,45 +1,45 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { DisplayInfo, SlideData, DisplayMode, SongBackground, DisplayMedia, StageTime, StageMessage, StageConfig } from "../shared/display";
 
-contextBridge.exposeInMainWorld("nova", {
+contextBridge.exposeInMainWorld("lumen", {
   getDisplays: async (): Promise<DisplayInfo[]> => {
-    return ipcRenderer.invoke("nova:getDisplays");
+    return ipcRenderer.invoke("lumen:getDisplays");
   },
   openOutput: async (displayId: number): Promise<boolean> => {
-    return ipcRenderer.invoke("nova:openOutput", displayId);
+    return ipcRenderer.invoke("lumen:openOutput", displayId);
   },
   onSlide: (callback: (slide: SlideData) => void) => {
-    ipcRenderer.on("nova:slide", (_event, slide: SlideData) => callback(slide));
+    ipcRenderer.on("lumen:slide", (_event, slide: SlideData) => callback(slide));
   },
   onDisplayMode: (callback: (mode: DisplayMode) => void) => {
-    ipcRenderer.on("nova:displayMode", (_event, mode: DisplayMode) => callback(mode));
+    ipcRenderer.on("lumen:displayMode", (_event, mode: DisplayMode) => callback(mode));
   },
   onSongBackground: (callback: (bg: SongBackground) => void) => {
-    ipcRenderer.on("nova:songBackground", (_event, bg: SongBackground) => callback(bg));
+    ipcRenderer.on("lumen:songBackground", (_event, bg: SongBackground) => callback(bg));
   },
   onDisplayMedia: (callback: (media: DisplayMedia) => void) => {
-    ipcRenderer.on("nova:displayMedia", (_event, media: DisplayMedia) => callback(media));
+    ipcRenderer.on("lumen:displayMedia", (_event, media: DisplayMedia) => callback(media));
   },
   onPreloadMedia: (callback: (media: DisplayMedia) => void) => {
-    ipcRenderer.on("nova:preloadMedia", (_event, media: DisplayMedia) => callback(media));
+    ipcRenderer.on("lumen:preloadMedia", (_event, media: DisplayMedia) => callback(media));
   },
   signalReady: () => {
-    ipcRenderer.send("nova:outputReady");
+    ipcRenderer.send("lumen:outputReady");
   },
   onStageTime: (callback: (data: StageTime) => void) => {
-    ipcRenderer.on("nova:stageTime", (_event, data: StageTime) => callback(data));
+    ipcRenderer.on("lumen:stageTime", (_event, data: StageTime) => callback(data));
   },
   onStageMessage: (callback: (data: StageMessage) => void) => {
-    ipcRenderer.on("nova:stageMessage", (_event, data: StageMessage) => callback(data));
+    ipcRenderer.on("lumen:stageMessage", (_event, data: StageMessage) => callback(data));
   },
   onStageConfig: (callback: (data: StageConfig) => void) => {
-    ipcRenderer.on("nova:stageConfig", (_event, data: StageConfig) => callback(data));
+    ipcRenderer.on("lumen:stageConfig", (_event, data: StageConfig) => callback(data));
   },
   // LATENCY: resuelve una URL remota a su ruta local cacheada (file://) vía el
   // cache de disco del main. Ante cualquier fallo devuelve la URL original.
   resolveAsset: async (url: string): Promise<string> => {
     try {
-      const resolved = await ipcRenderer.invoke("nova:resolveAsset", url);
+      const resolved = await ipcRenderer.invoke("lumen:resolveAsset", url);
       return typeof resolved === "string" && resolved ? resolved : url;
     } catch {
       return url;

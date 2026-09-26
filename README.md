@@ -1,13 +1,13 @@
-# NOVA — Monorepo
+# Lumen — Monorepo
 
-Un solo repositorio para el sistema de proyección Nova. Objetivo: **un solo motor de
+Un solo repositorio para el sistema de proyección Lumen. Objetivo: **un solo motor de
 render y un solo contrato**, para que color, fuente, tamaño y transición se respeten
 igual en todas las salidas y no vuelva a haber "drift" entre proyectos separados.
 
 ## Estructura
 
 ```
-nova/
+lumen/
 ├─ web/       Next.js — consola del operador + vistas de salida (/live-output/main, /stage, /ndi).
 │             ES EL ÚNICO renderer. Aquí se decide cómo se ve todo.
 ├─ desktop/   Electron — SHELL (sin FE de operador). Sus únicos trabajos:
@@ -28,7 +28,7 @@ muestra las vistas que sirve `web/`.
 ## Estado de la migración
 
 Este monorepo se está armando de forma **no destructiva**. Los repos originales
-(`mandarin` y `display-nova`) siguen intactos como respaldo hasta que `nova/` sea la
+(`mandarin` y `display-lumen`) siguen intactos como respaldo hasta que `lumen/` sea la
 fuente de verdad. Primera pieza lista: `shared/` (contrato).
 
 ## Contrato compartido (`shared/`)

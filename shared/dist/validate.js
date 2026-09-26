@@ -1,6 +1,6 @@
 "use strict";
 /**
- * NOVA · Validadores de runtime para el protocolo PLANO (sin dependencias externas)
+ * Lumen · Validadores de runtime para el protocolo PLANO (sin dependencias externas)
  * ────────────────────────────────────────────────────────────────────────────────
  * Estos guards permiten que el servidor WebSocket valide EN LA FRONTERA lo que llega
  * del cable (JSON ya parseado) sin lanzar excepciones. Si algo está malformado,

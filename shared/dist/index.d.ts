@@ -1,5 +1,5 @@
 /**
- * NOVA · Paquete compartido — punto de entrada único.
+ * Lumen · Paquete compartido — punto de entrada único.
  * Lo importan web/ (Next.js) y desktop/ (Electron shell).
  */
 export * from './contract';

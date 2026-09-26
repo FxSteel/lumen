@@ -1,11 +1,11 @@
-# NOVA Display Player
+# Lumen Display
 
-Electron + Vite + React + TypeScript scaffold for NOVA Display Player running a Setup window and a fullscreen Output window.
+Electron + Vite + React + TypeScript scaffold for Lumen Display running a Setup window and a fullscreen Output window.
 
 ## Requirements
 - Node.js 18 or newer
 - npm 10 or newer
-- Git (for cloning and pushing to the FxSteel/display-nova repo)
+- Git (for cloning and pushing to the FxSteel/display-lumen repo)
 
 ## Getting started
 ```bash

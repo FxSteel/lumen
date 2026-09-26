@@ -1,5 +1,5 @@
 /**
- * NOVA · Conformance del contrato de fidelidad
+ * Lumen · Conformance del contrato de fidelidad
  * ─────────────────────────────────────────────
  * Corre sobre el OUTPUT COMPILADO (`../dist/index.js`) para verificar que el
  * comportamiento observable del paquete no cambie sin que un test falle.
@@ -19,10 +19,10 @@ import pkg from '../dist/index.js';
 const {
   resolveTypography,
   transitionDurationMs,
-  novaSizeToVw,
+  lumenSizeToVw,
   parseClientMessage,
   TRANSITION_MS,
-  NOVA_REFERENCE_WIDTH,
+  LUMEN_REFERENCE_WIDTH,
 } = pkg;
 
 test('resolveTypography({}) devuelve objeto COMPLETO con defaults', () => {
@@ -72,9 +72,9 @@ test('transitionDurationMs coincide con TRANSITION_MS', () => {
   assert.equal(transitionDurationMs('none'), TRANSITION_MS['none']);
 });
 
-test('novaSizeToVw(1920) === 100 (ancho de referencia)', () => {
-  assert.equal(novaSizeToVw(1920), 100);
-  assert.equal(novaSizeToVw(NOVA_REFERENCE_WIDTH), 100);
+test('lumenSizeToVw(1920) === 100 (ancho de referencia)', () => {
+  assert.equal(lumenSizeToVw(1920), 100);
+  assert.equal(lumenSizeToVw(LUMEN_REFERENCE_WIDTH), 100);
 });
 
 test('parseClientMessage acepta un display-slide plano válido', () => {

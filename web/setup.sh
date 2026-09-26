@@ -1,7 +1,7 @@
 #!/bin/bash
-# Setup script for Nova - Song Operator
+# Setup script for Lumen - Song Operator
 
-echo "🎵 Nova - Song Operator Setup"
+echo "🎵 Lumen - Song Operator Setup"
 echo "=============================="
 echo ""
 

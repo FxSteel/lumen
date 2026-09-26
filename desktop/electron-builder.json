@@ -1,6 +1,6 @@
 {
-  "appId": "com.fxsteel.nova-display",
-  "productName": "NOVA Display Player",
+  "appId": "com.fxsteel.lumen",
+  "productName": "Lumen Display",
   "files": [
     "dist/**/*",
     "!dist/mac*",
@@ -10,7 +10,7 @@
     "package.json"
   ],
   "extraResources": [
-    { "from": "assets/nova.png", "to": "assets/nova.png" },
+    { "from": "assets/lumen.png", "to": "assets/lumen.png" },
     { "from": "assets/fonts", "to": "assets/fonts" }
   ],
   "directories": {
@@ -21,7 +21,7 @@
       { "target": "dmg", "arch": ["arm64"] },
       { "target": "dmg", "arch": ["x64"] }
     ],
-    "icon": "assets/nova.png",
+    "icon": "assets/lumen.png",
     "category": "public.app-category.productivity",
     "minimumSystemVersion": "11.0",
     "artifactName": "${productName}-${version}-${arch}.${ext}",

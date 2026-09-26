@@ -10,7 +10,7 @@ export default function SetupScreen() {
     let mounted = true;
     void (async () => {
       try {
-        const list = await window.nova.getDisplays();
+        const list = await window.lumen.getDisplays();
         if (!mounted) return;
         setDisplays(list);
         setSelectedId((prev) => prev ?? list[0]?.id ?? null);
@@ -33,7 +33,7 @@ export default function SetupScreen() {
     if (!selectedDisplay) return;
     setStatus("Abriendo ventana de Output...");
     try {
-      await window.nova.openOutput(selectedDisplay.id);
+      await window.lumen.openOutput(selectedDisplay.id);
       setStatus("Output abierto en el monitor seleccionado");
     } catch (error) {
       console.error(error);
@@ -45,7 +45,7 @@ export default function SetupScreen() {
     <main className="setup-screen">
       <section className="setup-card">
         <header>
-          <h1>NOVA Display — Setup</h1>
+          <h1>Lumen Display — Setup</h1>
           <p>Selecciona el monitor que mostrará la salida en modo kiosk.</p>
         </header>
 

@@ -1,5 +1,5 @@
 {
-  "name": "nova",
+  "name": "lumen-web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,7 +11,7 @@
     "merge:resolve:bible": "bash scripts/resolve-bible-merge-conflicts.sh"
   },
   "dependencies": {
-    "@nova/shared": "*",
+    "@lumen/shared": "*",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",

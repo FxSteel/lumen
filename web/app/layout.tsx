@@ -43,7 +43,7 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Nova - Song Operator",
+  title: "Lumen - Song Operator",
   description: "Manage and operate songs with real-time collaboration",
   icons: {
     icon: "/favicon.svg",

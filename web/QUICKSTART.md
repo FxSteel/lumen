@@ -1,4 +1,4 @@
-# 🚀 Quick Start Guide - Nova Song Operator
+# 🚀 Quick Start Guide - Lumen Song Operator
 
 ## ⚡ 5-Minute Setup
 
@@ -8,7 +8,7 @@
 
 ### 2. Configure Environment
 ```bash
-cd /Users/fer/Desktop/nova
+cd /Users/fer/Desktop/lumen
 # Edit .env.local
 cat > .env.local << EOF
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co

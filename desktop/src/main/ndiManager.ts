@@ -1,5 +1,5 @@
 /**
- * NDI output manager for NOVA Display.
+ * NDI output manager for Lumen Display.
  *
  * Uses koffi (FFI) to call the NDI SDK C library directly — no native
  * compilation required. NDI is silently disabled if the SDK is not installed.
@@ -15,8 +15,8 @@
 import path from "path";
 import fs from "fs";
 import { app } from "electron";
-import type { SlideData, SongBackground, DisplayMode, NdiOutput } from "@nova/shared";
-import { resolveTypography, novaSizeToVw } from "@nova/shared";
+import type { SlideData, SongBackground, DisplayMode, NdiOutput } from "@lumen/shared";
+import { resolveTypography, lumenSizeToVw } from "@lumen/shared";
 
 // Re-export the shared NdiOutput type so existing importers (e.g. main.ts,
 // which does `import type { NdiOutput } from "./main/ndiManager"`) keep working
@@ -69,11 +69,11 @@ const senders = new Map<string, NdiSenderEntry>();
 // ─── Packaged fonts ────────────────────────────────────────────────────────
 //
 // The family names below MUST match exactly what resolveTypography() emits
-// (SUPPORTED_FONTS in @nova/shared: "Inter", "Poppins", "Montserrat",
+// (SUPPORTED_FONTS in @lumen/shared: "Inter", "Poppins", "Montserrat",
 // "Roboto Flex", "Open Sans") and what the renderer's @font-face declares,
 // otherwise node-canvas silently falls back to the system default.
 //
-// Weights used by NOVA slides: 400 (Regular), 500 (Medium), 600 (SemiBold),
+// Weights used by Lumen slides: 400 (Regular), 500 (Medium), 600 (SemiBold),
 // 700 (Bold). Drop the matching files into desktop/assets/fonts/ — see the
 // README there for the exact filename → family/weight mapping.
 interface FontFace {
@@ -360,8 +360,8 @@ export function ndiHandleSlide(slide: SlideData) {
     const lh        = typo.lineHeight;
     const fw        = typo.fontWeight;
     const align     = (typo.textAlign ?? "center") as CanvasTextAlign;
-    // Same scale formula as the kiosk (novaSizeToVw at 1920) → exact size parity.
-    const fontSizePx = Math.round(novaSizeToVw(fsScale) * NDI_WIDTH / 100);
+    // Same scale formula as the kiosk (lumenSizeToVw at 1920) → exact size parity.
+    const fontSizePx = Math.round(lumenSizeToVw(fsScale) * NDI_WIDTH / 100);
     // Quote the family (some — "Open Sans", "Roboto Flex" — contain spaces);
     // sans-serif fallback keeps text visible if the font isn't packaged yet.
     const fontStack = `"${typo.fontFamily}", sans-serif`;

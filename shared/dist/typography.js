@@ -1,18 +1,18 @@
 "use strict";
 /**
- * NOVA · Motor de resolución tipográfica (fidelidad compartida)
+ * Lumen · Motor de resolución tipográfica (fidelidad compartida)
  * ─────────────────────────────────────────────────────────────
  * UNA sola función resuelve la tipografía: web y shell nativo la usan igual.
  * Aquí se arreglan de raíz las quejas: color, fuente y transición que "se perdían".
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_TYPOGRAPHY = exports.SUPPORTED_FONTS = exports.NOVA_REFERENCE_WIDTH = void 0;
+exports.DEFAULT_TYPOGRAPHY = exports.SUPPORTED_FONTS = exports.LUMEN_REFERENCE_WIDTH = void 0;
 exports.resolveTypography = resolveTypography;
-exports.novaSizeToVw = novaSizeToVw;
+exports.lumenSizeToVw = lumenSizeToVw;
 exports.transitionDurationMs = transitionDurationMs;
 const contract_1 = require("./contract");
-/** Ancho de referencia (px) en el que se expresan las "unidades Nova". */
-exports.NOVA_REFERENCE_WIDTH = 1920;
+/** Ancho de referencia (px) en el que se expresan las "unidades Lumen". */
+exports.LUMEN_REFERENCE_WIDTH = 1920;
 /** Familias soportadas → fuentes que DEBEN estar empaquetadas en ambos lados. */
 exports.SUPPORTED_FONTS = ['Inter', 'Poppins', 'Montserrat', 'Roboto Flex', 'Open Sans'];
 /** Look base MVP — se usa cuando el slide no trae un valor. */
@@ -56,11 +56,11 @@ function resolveTypography(input) {
     };
 }
 /**
- * Convierte "unidades Nova" (px de referencia a 1920 de ancho) a vw.
+ * Convierte "unidades Lumen" (px de referencia a 1920 de ancho) a vw.
  * Única fórmula de escala — web y nativo deben usar ESTA, no una propia.
  */
-function novaSizeToVw(sizeNovaPx) {
-    return sizeNovaPx / (exports.NOVA_REFERENCE_WIDTH / 100);
+function lumenSizeToVw(sizeLumenPx) {
+    return sizeLumenPx / (exports.LUMEN_REFERENCE_WIDTH / 100);
 }
 /** ms de una transición — lee la tabla única (no la duplica). */
 function transitionDurationMs(t) {

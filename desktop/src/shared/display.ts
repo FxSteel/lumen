@@ -1,14 +1,14 @@
 /**
- * NOVA · Contrato de display del shell nativo (desktop/).
+ * Lumen · Contrato de display del shell nativo (desktop/).
  * ───────────────────────────────────────────────────────
- * Fuente ÚNICA de verdad: se re-exporta desde `@nova/shared` para que la web
+ * Fuente ÚNICA de verdad: se re-exporta desde `@lumen/shared` para que la web
  * (mandarin → web/) y el shell nativo (desktop/) compartan EXACTAMENTE las
  * mismas primitivas de fidelidad (color, fuente, tamaño, peso, tracking,
  * sombra, transform, transición) y la misma tabla de transiciones.
  *
  * Backward-compat: se conservan los nombres que el resto de la app ya
  * importaba desde "@shared/display".
- *   • Los que existen en @nova/shared se re-exportan tal cual.
+ *   • Los que existen en @lumen/shared se re-exportan tal cual.
  *   • Los que NO existen allí (DisplayInfo/DisplayBounds/DisplaySize —
  *     específicos de Electron.screen) se mantienen definidos aquí.
  *   • SlideData se re-exporta AMPLIADO con campos legacy opcionales para no
@@ -36,23 +36,23 @@ export type {
   DisplayScreen,
   ScreenAssignment,
   SupportedFont,
-} from "@nova/shared";
+} from "@lumen/shared";
 
 // ─── Re-export de valores/funciones del motor compartido ────────────────────────
 export {
   resolveTypography,
-  novaSizeToVw,
+  lumenSizeToVw,
   transitionDurationMs,
   DEFAULT_TYPOGRAPHY,
   SUPPORTED_FONTS,
-  NOVA_REFERENCE_WIDTH,
+  LUMEN_REFERENCE_WIDTH,
   TRANSITION_MS,
-} from "@nova/shared";
+} from "@lumen/shared";
 
-import type { SlideData as SharedSlideData, Typography } from "@nova/shared";
+import type { SlideData as SharedSlideData, Typography } from "@lumen/shared";
 
 /**
- * Tipografía legacy del slide (formato previo a @nova/shared). Se mantiene sólo
+ * Tipografía legacy del slide (formato previo a @lumen/shared). Se mantiene sólo
  * por backward-compat con consumidores que aún leen `slide.songTypography`.
  * El formato canónico es `typography: Partial<Typography>` (ver SlideData).
  */
@@ -64,13 +64,13 @@ export interface SlideTypography {
 }
 
 /**
- * SlideData canónico = el de @nova/shared (type, content, label, typography,
+ * SlideData canónico = el de @lumen/shared (type, content, label, typography,
  * transition, contentPadding, campos de versículo…) AMPLIADO con campos legacy
  * opcionales. Los campos legacy no afectan a quien lee el formato nuevo, y
  * permiten que ficheros aún no migrados (NDI) sigan compilando.
  */
 export interface SlideData extends SharedSlideData {
-  // ── Legacy opcionales (pre-@nova/shared) ──
+  // ── Legacy opcionales (pre-@lumen/shared) ──
   reference?: string;
   fontSize?: number;
   lineHeight?: number;
@@ -80,7 +80,7 @@ export interface SlideData extends SharedSlideData {
   songTypography?: Partial<SlideTypography> | null;
 }
 
-// ─── Tipos específicos de Electron.screen (NO existen en @nova/shared) ──────────
+// ─── Tipos específicos de Electron.screen (NO existen en @lumen/shared) ──────────
 export interface DisplayBounds {
   x: number;
   y: number;

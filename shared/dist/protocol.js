@@ -1,6 +1,6 @@
 "use strict";
 /**
- * NOVA · Protocolo WebSocket web ↔ shell nativo (puerto 9877)
+ * Lumen · Protocolo WebSocket web ↔ shell nativo (puerto 9877)
  * ───────────────────────────────────────────────────────────
  * Mensajes tipados y versionados. Un cambio incompatible sube PROTOCOL_VERSION.
  * El handshake `hello` deja que ambos lados negocien versión y capacidades.

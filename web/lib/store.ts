@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { SongTypography } from '@/lib/typography'
 
-const SETLIST_IDS_KEY = 'nova:setlistSongIds'
-const SETLIST_FILTER_KEY = 'nova:isSetlistFilterOn'
+const SETLIST_IDS_KEY = 'lumen:setlistSongIds'
+const SETLIST_FILTER_KEY = 'lumen:isSetlistFilterOn'
 
 function readSessionSetlistSongIds(): string[] {
   if (typeof window === 'undefined') return []

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Monitor, AlertCircle, Plus, Trash2, Radio } from 'lucide-react'
 import { toast } from 'sonner'
-import type { DisplayNovaScreen, NdiOutput } from '@/lib/display-nova-bridge'
+import type { LumenScreen, NdiOutput } from '@/lib/lumen-bridge'
 
 interface Screen {
   id: number
@@ -21,20 +21,20 @@ interface ScreenAssignment {
 }
 
 interface ScreenSelectorProps {
-  displayNovaConnected?: boolean
-  displayNovaScreens?: DisplayNovaScreen[]
-  onDisplayNovaAssignScreen?: (screenId: string, role: 'main' | 'stage' | 'none') => void
+  displayLumenConnected?: boolean
+  displayLumenScreens?: LumenScreen[]
+  onDisplayLumenAssignScreen?: (screenId: string, role: 'main' | 'stage' | 'none') => void
   onSendNdiConfig?: (outputs: NdiOutput[]) => void
   /** Whether the native app reports NDI as actually usable. `undefined` = state not yet received (unknown). */
   ndiAvailable?: boolean
-  /** Native (Display-Nova) app version reported via the `state` message. */
+  /** Native (Lumen) app version reported via the `state` message. */
   nativeVersion?: string
 }
 
 export default function ScreenSelector({
-  displayNovaConnected,
-  displayNovaScreens = [],
-  onDisplayNovaAssignScreen,
+  displayLumenConnected,
+  displayLumenScreens = [],
+  onDisplayLumenAssignScreen,
   onSendNdiConfig,
   ndiAvailable,
   nativeVersion,
@@ -181,29 +181,29 @@ export default function ScreenSelector({
     }
   }
 
-  const displayNovaStatus = (
-    <div className={`flex items-center gap-2 ${displayNovaConnected ? 'text-green-400' : 'text-gray-500'}`}>
-      <div className={`w-2 h-2 rounded-full ${displayNovaConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`} />
-      <span className="text-xs">{displayNovaConnected ? 'Display-Nova Connected' : 'Display-Nova Offline'}</span>
-      {displayNovaConnected && nativeVersion && (
+  const displayLumenStatus = (
+    <div className={`flex items-center gap-2 ${displayLumenConnected ? 'text-green-400' : 'text-gray-500'}`}>
+      <div className={`w-2 h-2 rounded-full ${displayLumenConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`} />
+      <span className="text-xs">{displayLumenConnected ? 'Lumen Connected' : 'Lumen Offline'}</span>
+      {displayLumenConnected && nativeVersion && (
         <span className="text-[10px] text-gray-500 font-mono">v{nativeVersion}</span>
       )}
     </div>
   )
 
-  // If Display-Nova is connected, show only its screens
-  if (displayNovaConnected) {
+  // If Lumen is connected, show only its screens
+  if (displayLumenConnected) {
     return (
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-white flex items-center gap-2">
           <Monitor size={20} />
           Pantallas Conectadas
         </h3>
-        {displayNovaStatus}
-        {displayNovaScreens.length === 0 ? (
-          <div className="text-sm text-gray-400">Detectando pantallas de Display-Nova...</div>
+        {displayLumenStatus}
+        {displayLumenScreens.length === 0 ? (
+          <div className="text-sm text-gray-400">Detectando pantallas de Lumen...</div>
         ) : (
-          <DisplayNovaScreenSection screens={displayNovaScreens} onAssign={onDisplayNovaAssignScreen} connected={displayNovaConnected} />
+          <LumenScreenSection screens={displayLumenScreens} onAssign={onDisplayLumenAssignScreen} connected={displayLumenConnected} />
         )}
         <NdiSection onSendConfig={onSendNdiConfig} ndiAvailable={ndiAvailable} />
       </div>
@@ -218,7 +218,7 @@ export default function ScreenSelector({
           <Monitor size={20} />
           Pantallas Conectadas
         </h3>
-        {displayNovaStatus}
+        {displayLumenStatus}
         <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md flex items-start gap-2">
           <AlertCircle size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
           <div>
@@ -242,7 +242,7 @@ export default function ScreenSelector({
           <Monitor size={20} />
           Pantallas Conectadas
         </h3>
-        {displayNovaStatus}
+        {displayLumenStatus}
         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md flex items-start gap-3">
           <AlertCircle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
@@ -272,7 +272,7 @@ export default function ScreenSelector({
           <Monitor size={20} />
           Pantallas Conectadas
         </h3>
-        {displayNovaStatus}
+        {displayLumenStatus}
         <div className="text-sm text-gray-400">Detectando pantallas...</div>
       </div>
     )
@@ -286,7 +286,7 @@ export default function ScreenSelector({
           <Monitor size={20} />
           Pantallas Conectadas
         </h3>
-        {displayNovaStatus}
+        {displayLumenStatus}
         <div className="text-sm text-gray-400">No se detectaron pantallas adicionales</div>
       </div>
     )
@@ -298,7 +298,7 @@ export default function ScreenSelector({
         <Monitor size={20} />
         Pantallas Conectadas
       </h3>
-      {displayNovaStatus}
+      {displayLumenStatus}
 
       {/* Screen Cards */}
       <div className="space-y-2">
@@ -366,14 +366,14 @@ export default function ScreenSelector({
   )
 }
 
-const DN_ASSIGNMENTS_KEY = 'displayNova-screenAssignments'
+const DN_ASSIGNMENTS_KEY = 'displayLumen-screenAssignments'
 
-function DisplayNovaScreenSection({
+function LumenScreenSection({
   screens,
   onAssign,
   connected,
 }: {
-  screens: DisplayNovaScreen[]
+  screens: LumenScreen[]
   onAssign?: (screenId: string, role: 'main' | 'stage' | 'none') => void
   connected?: boolean
 }) {
@@ -409,7 +409,7 @@ function DisplayNovaScreenSection({
 
   return (
     <div className="space-y-2 pt-2 border-t border-[#333]">
-      <h4 className="text-sm font-medium text-gray-300">Pantallas detectadas por Display-Nova</h4>
+      <h4 className="text-sm font-medium text-gray-300">Pantallas detectadas por Lumen</h4>
       {screens.map((screen) => (
         <div key={screen.id} className="p-3 bg-[#2a2a2a] border border-[#333] rounded-md flex items-center justify-between gap-3">
           <div>
@@ -442,7 +442,7 @@ function DisplayNovaScreenSection({
 
 // ── NDI Section ──────────────────────────────────────────────────────────────
 
-const NDI_STORAGE_KEY = 'displayNova-ndiOutputs'
+const NDI_STORAGE_KEY = 'lumen-ndiOutputs'
 
 function NdiSection({
   onSendConfig,
@@ -472,7 +472,7 @@ function NdiSection({
   const addOutput = () => {
     const next: NdiOutput = {
       id: crypto.randomUUID(),
-      name: `Nova-NDI-${outputs.length + 1}`,
+      name: `Lumen-NDI-${outputs.length + 1}`,
       sendLyrics: true,
       sendBackground: false,
       sendLogo: false,

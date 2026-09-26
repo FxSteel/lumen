@@ -9,9 +9,9 @@ import { useWorkspace } from '@/lib/workspace-provider'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { LiveOutputBroadcaster } from '@/lib/broadcast'
-import { DisplayNovaBridge, DisplayNovaScreen, getGlobalBridge } from '@/lib/display-nova-bridge'
-import { resolveTypography } from '@nova/shared'
-import type { Typography, NativeState } from '@nova/shared'
+import { LumenBridge, LumenScreen, getGlobalBridge } from '@/lib/lumen-bridge'
+import { resolveTypography } from '@lumen/shared'
+import type { Typography, NativeState } from '@lumen/shared'
 import type { SongTypography } from '@/lib/typography'
 import ScreenSelector from './ScreenSelector'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -163,7 +163,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
   const { activeWorkspaceId } = useWorkspace()
   const { currentSlideId } = useAppStore()
   const broadcasterRef = useRef<LiveOutputBroadcaster | null>(null)
-  const bridgeRef = useRef<DisplayNovaBridge | null>(null)
+  const bridgeRef = useRef<LumenBridge | null>(null)
   const outputModeRef = useRef<OutputMode>('clear')
   const previousSlideIdRef = useRef<string | null>(currentSlideId ?? null)
   const lastSlideForBridgeRef = useRef<{ main: any; stage: any } | null>(null)
@@ -177,11 +177,11 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
   })())
   const previewVisibleRef = useRef(true)
 
-  const [displayNovaConnected, setDisplayNovaConnected] = useState(false)
-  const [displayNovaScreens, setDisplayNovaScreens] = useState<DisplayNovaScreen[]>([])
-  // Latest native health reported by Display-Nova via `state` message.
+  const [displayLumenConnected, setDisplayLumenConnected] = useState(false)
+  const [displayLumenScreens, setLumenScreens] = useState<LumenScreen[]>([])
+  // Latest native health reported by Lumen via `state` message.
   // null = state not yet received (unknown → UI degrades gracefully).
-  const [displayNovaState, setDisplayNovaState] = useState<NativeState | null>(null)
+  const [displayLumenState, setDisplayLumenState] = useState<NativeState | null>(null)
   
   // Pantalla Principal state
   const [outputMode, setOutputMode] = useState<OutputMode>('clear')
@@ -277,17 +277,17 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
     loadSettings()
   }, [activeWorkspaceId])
 
-  // Initialize Display-Nova bridge (singleton shared across components)
+  // Initialize Lumen bridge (singleton shared across components)
   useEffect(() => {
     const bridge = getGlobalBridge()
     if (!bridge) return
 
     bridge.onConnectionChange = (connected) => {
-      setDisplayNovaConnected(connected)
+      setDisplayLumenConnected(connected)
       // Drop stale native health on disconnect so NDI status reverts to "unknown".
-      if (!connected) setDisplayNovaState(null)
+      if (!connected) setDisplayLumenState(null)
       if (connected) {
-        // Sync current state to Display-Nova on connect
+        // Sync current state to Lumen on connect
         bridge.sendBackground(lastBackgroundRef.current.backgroundType, lastBackgroundRef.current.backgroundUrl)
         if (outputModeRef.current === 'media') {
           // Resync media to native app on reconnect
@@ -331,13 +331,13 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
         if (savedMessage) bridge.sendStageMessage(savedMessage)
       }
     }
-    bridge.onScreensDetected = (screens) => setDisplayNovaScreens(screens)
+    bridge.onScreensDetected = (screens) => setLumenScreens(screens)
     // Surface real native health (version + whether NDI is actually available).
-    bridge.onState = (state) => setDisplayNovaState(state)
+    bridge.onState = (state) => setDisplayLumenState(state)
     bridgeRef.current = bridge
 
     // Sync initial connection state
-    setDisplayNovaConnected(bridge.isConnected)
+    setDisplayLumenConnected(bridge.isConnected)
     // If already connected (e.g. tab switch), request screens again since onopen won't fire
     if (bridge.isConnected) {
       bridge.requestScreens()
@@ -632,7 +632,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
           }
         }
 
-        // Forward to Display-Nova if connected (bible verses will resend once verseText loads)
+        // Forward to Lumen if connected (bible verses will resend once verseText loads)
         if (bridgeRef.current?.isConnected) {
           bridgeRef.current.sendSlide('main', lastSlideForBridgeRef.current.main)
           bridgeRef.current.sendSlide('stage', lastSlideForBridgeRef.current.stage)
@@ -760,7 +760,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
     loadAssets()
   }, [activeWorkspaceId])
 
-  // Load bible verse text and push to Display-Nova bridge once available
+  // Load bible verse text and push to Lumen bridge once available
   useEffect(() => {
     const loadVerseText = async () => {
       if (!currentSlide || currentSlide.type !== 'bible_verse') {
@@ -1097,11 +1097,11 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
 
       {/* SECTION 4: PANTALLAS CONECTADAS */}
       <ScreenSelector
-        displayNovaConnected={displayNovaConnected}
-        displayNovaScreens={displayNovaScreens}
-        ndiAvailable={displayNovaState?.ndiAvailable}
-        nativeVersion={displayNovaState?.version}
-        onDisplayNovaAssignScreen={(screenId, role) => {
+        displayLumenConnected={displayLumenConnected}
+        displayLumenScreens={displayLumenScreens}
+        ndiAvailable={displayLumenState?.ndiAvailable}
+        nativeVersion={displayLumenState?.version}
+        onDisplayLumenAssignScreen={(screenId, role) => {
           if (role !== 'none') {
             bridgeRef.current?.assignScreen(screenId, role)
           }

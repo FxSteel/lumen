@@ -1,14 +1,14 @@
 {
-  "name": "nova-monorepo",
+  "name": "lumen-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "NOVA — monorepo: web (operador + render), desktop (shell kiosk + NDI), shared (contrato único)",
+  "description": "Lumen — monorepo: web (operador + render), desktop (shell kiosk + NDI), shared (contrato único)",
   "workspaces": [
     "shared",
     "web",
     "desktop"
   ],
   "scripts": {
-    "typecheck:shared": "npm run typecheck --workspace @nova/shared"
+    "typecheck:shared": "npm run typecheck --workspace @lumen/shared"
   }
 }

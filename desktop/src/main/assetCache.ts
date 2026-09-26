@@ -1,5 +1,5 @@
 /**
- * NOVA · Cache de assets en disco (proceso MAIN).
+ * Lumen · Cache de assets en disco (proceso MAIN).
  * ────────────────────────────────────────────────
  * Objetivo (lane LATENCY): proyección instantánea. En vez de que el renderer
  * descargue media on-demand al proyectar (fetch→blob, con delay visible la

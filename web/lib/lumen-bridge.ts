@@ -1,11 +1,11 @@
-import { PROTOCOL_VERSION } from '@nova/shared'
-import type { NativeState, ServerMessage } from '@nova/shared'
+import { PROTOCOL_VERSION } from '@lumen/shared'
+import type { NativeState, ServerMessage } from '@lumen/shared'
 
-let _globalBridge: DisplayNovaBridge | null = null
+let _globalBridge: LumenBridge | null = null
 
-export function getGlobalBridge(): DisplayNovaBridge | null {
+export function getGlobalBridge(): LumenBridge | null {
   if (typeof window === 'undefined') return null
-  if (!_globalBridge) _globalBridge = new DisplayNovaBridge()
+  if (!_globalBridge) _globalBridge = new LumenBridge()
   return _globalBridge
 }
 
@@ -24,7 +24,7 @@ export interface NdiOutput {
   sendLogo: boolean
 }
 
-export interface DisplayNovaScreen {
+export interface LumenScreen {
   id: string
   name: string
   width: number
@@ -32,7 +32,7 @@ export interface DisplayNovaScreen {
   isPrimary: boolean
 }
 
-export class DisplayNovaBridge {
+export class LumenBridge {
   private socket: WebSocket | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null
@@ -44,7 +44,7 @@ export class DisplayNovaBridge {
   private readonly LIVENESS_MS = 25000
 
   onConnectionChange?: (connected: boolean) => void
-  onScreensDetected?: (screens: DisplayNovaScreen[]) => void
+  onScreensDetected?: (screens: LumenScreen[]) => void
   onState?: (state: NativeState) => void
 
   constructor() {
@@ -66,7 +66,7 @@ export class DisplayNovaBridge {
           this.socket?.close()
           return
         }
-        console.log('[Display-Nova] Connected')
+        console.log('[Lumen] Connected')
         this._isConnected = true
         this.onConnectionChange?.(true)
         // Handshake: announce our protocol version right after opening.
@@ -76,7 +76,7 @@ export class DisplayNovaBridge {
       }
 
       this.socket.onclose = () => {
-        console.log('[Display-Nova] Disconnected')
+        console.log('[Lumen] Disconnected')
         this._isConnected = false
         this.stopHeartbeat()
         this.onConnectionChange?.(false)
@@ -90,7 +90,7 @@ export class DisplayNovaBridge {
           this.resetLiveness()
           this.handleMessage(message)
         } catch (err) {
-          console.error('[Display-Nova] Failed to parse message:', err)
+          console.error('[Lumen] Failed to parse message:', err)
         }
       }
 
@@ -98,7 +98,7 @@ export class DisplayNovaBridge {
         // onerror fires before onclose; let onclose handle reconnect
       }
     } catch (error) {
-      console.error('[Display-Nova] Failed to connect:', error)
+      console.error('[Lumen] Failed to connect:', error)
       this.scheduleReconnect()
     }
   }
@@ -128,7 +128,7 @@ export class DisplayNovaBridge {
     if (this.livenessTimeout) clearTimeout(this.livenessTimeout)
     this.livenessTimeout = setTimeout(() => {
       this.livenessTimeout = null
-      console.warn('[Display-Nova] Server silent; closing socket to force reconnect')
+      console.warn('[Lumen] Server silent; closing socket to force reconnect')
       // Closing lets the existing onclose → scheduleReconnect path run.
       this.socket?.close()
     }, this.LIVENESS_MS)
@@ -148,13 +148,13 @@ export class DisplayNovaBridge {
   private handleMessage(message: ServerMessage | { type: 'ping'; t: number }) {
     switch (message.type) {
       case 'hello-ack':
-        console.log('[Display-Nova] Handshake ack, protocol', message.protocolVersion)
+        console.log('[Lumen] Handshake ack, protocol', message.protocolVersion)
         break
       case 'screens-detected':
         this.onScreensDetected?.(message.payload?.screens ?? [])
         break
       case 'screen-assignment-confirmed':
-        console.log('[Display-Nova] Screen assignment confirmed')
+        console.log('[Lumen] Screen assignment confirmed')
         break
       case 'state':
         this.onState?.(message.payload)
@@ -167,7 +167,7 @@ export class DisplayNovaBridge {
         // Liveness already refreshed by resetLiveness() on receipt.
         break
       default:
-        console.log('[Display-Nova] Unknown message type:', (message as { type?: string }).type)
+        console.log('[Lumen] Unknown message type:', (message as { type?: string }).type)
     }
   }
 
@@ -224,7 +224,7 @@ export class DisplayNovaBridge {
     try {
       this.socket.send(JSON.stringify(data))
     } catch (err) {
-      console.error('[Display-Nova] Failed to send:', err)
+      console.error('[Lumen] Failed to send:', err)
     }
   }
 

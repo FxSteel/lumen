@@ -1,8 +1,8 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { screen as electronScreen } from "electron";
 import type { SlideData, DisplayMode, SongBackground, DisplayMedia, StageTime, StageMessage, StageConfig } from "../shared/display";
-import { PROTOCOL_VERSION } from "@nova/shared";
-import type { ServerCapabilities, NativeState, DisplayScreen } from "@nova/shared";
+import { PROTOCOL_VERSION } from "@lumen/shared";
+import type { ServerCapabilities, NativeState, DisplayScreen } from "@lumen/shared";
 
 export interface ScreenAssignment {
   screenId: string;

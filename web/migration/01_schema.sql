@@ -1,5 +1,5 @@
 -- ============================================================================
--- Nova · Migración de canciones  Supabase → PostgreSQL (Dokploy)
+-- Lumen · Migración de canciones  Supabase → PostgreSQL (Dokploy)
 -- Archivo 1/2: ESQUEMA (limpio, autocontenido, sin dependencias de Supabase)
 --
 -- Alcance: SOLO canciones (songs + song_slides).

@@ -263,9 +263,9 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Powered by Nova */}
+        {/* Powered by Lumen */}
         <a 
-          href="https://nova-ai.cl" 
+          href="https://lumen-ai.cl" 
           target="_blank" 
           rel="noopener noreferrer"
           className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500 hover:text-gray-400 transition-colors cursor-pointer"
@@ -283,7 +283,7 @@ export default function LoginPage() {
               </linearGradient>
             </defs>
           </svg>
-          <span className="font-medium text-gray-400">Nova</span>
+          <span className="font-medium text-gray-400">Lumen</span>
         </a>
       </div>
     </div>

@@ -1,8 +1,8 @@
 {
-  "name": "nova-display",
+  "name": "lumen-display",
   "version": "0.1.0",
   "private": true,
-  "description": "NOVA Display Player — Electron/Vite workspace",
+  "description": "Lumen Display — Electron/Vite workspace",
   "main": "dist/main/main.js",
   "type": "commonjs",
   "scripts": {
@@ -26,7 +26,7 @@
   "author": "FxSteel",
   "license": "MIT",
   "dependencies": {
-    "@nova/shared": "*",
+    "@lumen/shared": "*",
     "canvas": "^3.2.1",
     "koffi": "^2.15.2",
     "react": "^18.3.0",
@@ -48,7 +48,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/FxSteel/display-nova.git"
+    "url": "https://github.com/FxSteel/display-lumen.git"
   },
   "engines": {
     "node": ">=18"

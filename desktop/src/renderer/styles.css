@@ -2,7 +2,7 @@
  * Los archivos los provee otra lane; se referencian por nombre relativo a
  * desktop/src/renderer/ → ../../assets/fonts/. Cada familia usa un archivo
  * variable (rango de peso 100–900). font-display: swap evita FOIT.
- * Familias soportadas = SUPPORTED_FONTS de @nova/shared:
+ * Familias soportadas = SUPPORTED_FONTS de @lumen/shared:
  *   Inter, Poppins, Montserrat, "Roboto Flex", "Open Sans".
  */
 @font-face {

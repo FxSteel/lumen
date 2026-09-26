@@ -6,11 +6,11 @@ import type {
   DisplayMedia,
   Typography,
 } from "@shared/display";
-import { resolveTypography, novaSizeToVw, transitionDurationMs } from "@shared/display";
+import { resolveTypography, lumenSizeToVw, transitionDurationMs } from "@shared/display";
 
 /**
  * LATENCY: resuelve una URL remota a su ruta local cacheada (file://) a través
- * del cache de disco del proceso main (window.nova.resolveAsset). Si el asset
+ * del cache de disco del proceso main (window.lumen.resolveAsset). Si el asset
  * ya fue calentado en preload, la resolución es instantánea. Ante cualquier
  * fallo (o si el bridge no expone resolveAsset) devuelve la URL original para
  * conservar el comportamiento previo (fallback remoto).
@@ -22,7 +22,7 @@ async function resolveAsset(url: string): Promise<string> {
   // En producción el renderer es file://, donde el cache local sí carga.
   if (typeof location !== "undefined" && location.protocol !== "file:") return url;
   try {
-    const fn = (window.nova as unknown as {
+    const fn = (window.lumen as unknown as {
       resolveAsset?: (u: string) => Promise<string>;
     }).resolveAsset;
     if (!fn) return url;
@@ -98,7 +98,7 @@ function useSlideFade(slide: SlideData | null) {
 function BibleVerseSlide({ slide }: { slide: SlideData }) {
   const typo = resolveTypography(slide.typography);
   const baseStyle = typographyStyle(typo);
-  const targetVw = novaSizeToVw(typo.fontSize);
+  const targetVw = lumenSizeToVw(typo.fontSize);
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLParagraphElement>(null);
 
@@ -155,7 +155,7 @@ function BibleVerseSlide({ slide }: { slide: SlideData }) {
 function SongSlide({ slide }: { slide: SlideData }) {
   const typo = resolveTypography(slide.typography);
   const baseStyle = typographyStyle(typo);
-  const fontSizeVw = novaSizeToVw(typo.fontSize);
+  const fontSizeVw = lumenSizeToVw(typo.fontSize);
   // Formato nuevo: `label`. Backward-compat: `reference`.
   const label = slide.label ?? slide.reference;
 
@@ -180,15 +180,15 @@ export default function OutputScreen() {
   const { rendered: renderedSlide, opacity, durationMs } = useSlideFade(slide);
 
   useEffect(() => {
-    window.nova.onSlide((data) => {
+    window.lumen.onSlide((data) => {
       // Ignorar bible_verse con verseText vacío (primera entrega)
       if (data.type === "bible_verse" && !data.verseText) return;
       setSlide(data);
       setMedia(null);
       setMode({ mode: "slide" });
     });
-    window.nova.onDisplayMode((m) => { setMode(m); setMedia(null); });
-    window.nova.onSongBackground(async (bg) => {
+    window.lumen.onDisplayMode((m) => { setMode(m); setMedia(null); });
+    window.lumen.onSongBackground(async (bg) => {
       // Resolver el fondo a su ruta local cacheada antes de pintarlo.
       if (bg.backgroundType !== "none" && bg.backgroundUrl) {
         const url = await resolveAsset(bg.backgroundUrl);
@@ -197,18 +197,18 @@ export default function OutputScreen() {
         setBackground(bg);
       }
     });
-    window.nova.onPreloadMedia((m) => {
+    window.lumen.onPreloadMedia((m) => {
       // Calentar el cache (el main ya prefetchea; esto lo refuerza desde el renderer).
       void resolveAsset(m.url);
     });
-    window.nova.onDisplayMedia(async (m) => {
+    window.lumen.onDisplayMedia(async (m) => {
       setSlide(null);
       setMode({ mode: "slide" });
       const url = await resolveAsset(m.url);
       setMedia({ ...m, url });
     });
     // Avisar al main process que los listeners están listos → recibir estado cacheado
-    window.nova.signalReady();
+    window.lumen.signalReady();
   }, []);
 
   const hasBg = background && background.backgroundType !== "none" && background.backgroundUrl;

@@ -1,5 +1,5 @@
 /**
- * NOVA · Motor de resolución tipográfica (fidelidad compartida)
+ * Lumen · Motor de resolución tipográfica (fidelidad compartida)
  * ─────────────────────────────────────────────────────────────
  * UNA sola función resuelve la tipografía: web y shell nativo la usan igual.
  * Aquí se arreglan de raíz las quejas: color, fuente y transición que "se perdían".
@@ -8,8 +8,8 @@
 import type { Typography, TransitionType } from './contract';
 import { TRANSITION_MS } from './contract';
 
-/** Ancho de referencia (px) en el que se expresan las "unidades Nova". */
-export const NOVA_REFERENCE_WIDTH = 1920;
+/** Ancho de referencia (px) en el que se expresan las "unidades Lumen". */
+export const LUMEN_REFERENCE_WIDTH = 1920;
 
 /** Familias soportadas → fuentes que DEBEN estar empaquetadas en ambos lados. */
 export const SUPPORTED_FONTS = ['Inter', 'Poppins', 'Montserrat', 'Roboto Flex', 'Open Sans'] as const;
@@ -59,11 +59,11 @@ export function resolveTypography(input?: Partial<Typography> | null): Typograph
 }
 
 /**
- * Convierte "unidades Nova" (px de referencia a 1920 de ancho) a vw.
+ * Convierte "unidades Lumen" (px de referencia a 1920 de ancho) a vw.
  * Única fórmula de escala — web y nativo deben usar ESTA, no una propia.
  */
-export function novaSizeToVw(sizeNovaPx: number): number {
-  return sizeNovaPx / (NOVA_REFERENCE_WIDTH / 100);
+export function lumenSizeToVw(sizeLumenPx: number): number {
+  return sizeLumenPx / (LUMEN_REFERENCE_WIDTH / 100);
 }
 
 /** ms de una transición — lee la tabla única (no la duplica). */

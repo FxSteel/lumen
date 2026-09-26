@@ -21,11 +21,11 @@ function getDisplayList(): DisplayInfo[] {
 }
 
 export function registerIpcHandlers(outputUrl: string, preloadPath: string) {
-  ipcMain.handle("nova:getDisplays", () => {
+  ipcMain.handle("lumen:getDisplays", () => {
     return getDisplayList();
   });
 
-  ipcMain.handle("nova:openOutput", (_event, displayId: number) => {
+  ipcMain.handle("lumen:openOutput", (_event, displayId: number) => {
     const displays = getDisplayList();
     const target = displays.find((display) => display.id === displayId);
 

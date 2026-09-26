@@ -1,8 +1,8 @@
 /**
- * NOVA · Contrato compartido web ↔ shell nativo
+ * Lumen · Contrato compartido web ↔ shell nativo
  * ─────────────────────────────────────────────
  * Fuente ÚNICA de verdad de qué se envía y cómo se debe pintar.
- * Lo importan tanto la web (mandarin → web/) como el shell nativo (display-nova → desktop/).
+ * Lo importan tanto la web (mandarin → web/) como el shell nativo (display-lumen → desktop/).
  *
  * Regla: las "primitivas de fidelidad" (color, fuente, tamaño, peso, tracking,
  * sombra, transform, transición) viven AQUÍ y se aplican con UN solo motor.
@@ -23,7 +23,7 @@ export type TextTransform = 'none' | 'uppercase' | 'lowercase';
 export interface Typography {
     /** Familia lógica (ej. "Inter", "Poppins"). El renderer la resuelve a una fuente empaquetada. */
     fontFamily?: string;
-    /** Tamaño base en "unidades Nova" (px de referencia a 1920 de ancho). */
+    /** Tamaño base en "unidades Lumen" (px de referencia a 1920 de ancho). */
     fontSize: number;
     /** 100–900. */
     fontWeight: number;
@@ -47,7 +47,7 @@ export interface SlideData {
     typography?: Partial<Typography> | null;
     /** Transición con la que debe entrar esta diapositiva. */
     transition?: TransitionType;
-    /** Padding de contenido en unidades Nova. */
+    /** Padding de contenido en unidades Lumen. */
     contentPadding?: number;
     verseText?: string;
     displayReference?: string;
