@@ -1,0 +1,68 @@
+# AuthVault — Cursor Agent Rules
+
+## Proyecto
+- App de autenticación TOTP (2FA) personal
+- Dominio: auth.nova-ai.cl
+- Repo: github.com/FxSteel/AuthVault
+
+## Stack
+- Next.js 14 (App Router)
+- Supabase (PostgreSQL + Auth + Storage)
+- TypeScript estricto
+- Sin librerías de UI (no Tailwind, no shadcn, no MUI)
+- Estilos siempre inline con objetos React.CSSProperties
+
+## Base de datos (Supabase)
+- Tabla: `accounts` con columnas: id, user_id, name, issuer, secret_encrypted, icon_slug, created_at
+- RLS habilitado — siempre incluir `.eq('user_id', user.id)` en queries de UPDATE y DELETE
+- Nunca usar `.single()` en UPDATE, solo en SELECT cuando se espera 1 resultado
+- Bucket Storage: `app-icons` — URL: ${SUPABASE_URL}/storage/v1/object/public/app-icons/{slug}.png
+
+## Seguridad (CRÍTICO — no tocar)
+- Los secrets TOTP están cifrados con AES-256-GCM usando el email del usuario como clave
+- Funciones en /lib/totp.ts: encryptSecret, decryptSecret, generateTOTP, getTimeRemaining
+- NUNCA modificar la lógica de cifrado
+- NUNCA loggear secrets o secret_encrypted en consola
+
+## Autenticación
+- Email + contraseña (Supabase Auth)
+- Sin Magic Link
+- Callback en /auth/callback/route.ts
+
+## UI / UX
+- Diseño dark mode: background #080c10, cards #111820, borders #1e2d3d
+- Colores primarios: cyan #00e5ff, purple #7c3aed, verde éxito #10b981, rojo error #ef4444
+- Fuentes: var(--font-syne) para títulos, var(--font-mono) para códigos TOTP
+- Todos los textos de UI en español
+- Mensajes de error en español
+- Animación fadeSlideIn disponible globalmente en globals.css
+
+## Componentes clave (app/page.tsx)
+- SwipeCard: swipe izquierda para editar/eliminar (mouse + touch)
+- Acordeón: solo una cuenta abierta a la vez (openId state)
+- AppIcon: carga ícono desde Supabase Storage, fallback a default.png
+- OtpCode: muestra código TOTP, click para copiar
+- TimerRing: anillo SVG con countdown de 30 segundos
+
+## Patrones obligatorios
+- Siempre usar `'use client'` en componentes con estado
+- Estados de loading y error en todas las operaciones async
+- Toast para feedback al usuario (showToast function)
+- Confirmar antes de eliminar (confirm dialog)
+- stopPropagation en botones dentro de elementos clickeables
+
+## Lo que NO debes hacer
+- No agregar dependencias npm sin preguntar primero
+- No cambiar el esquema de la DB sin avisar
+- No usar localStorage (no soportado en este contexto)
+- No romper el flujo de autenticación existente
+- No usar Tailwind CSS
+- No crear archivos CSS separados — todo inline
+
+## Comunicación (IMPORTANTE)
+- Cuando el usuario pide una explicación, responde SOLO con texto claro y conciso
+- NUNCA generes bloques de código en el chat con fines explicativos
+- Si necesitas referenciar código, menciona el archivo y número de línea, no copies el código
+- Los cambios reales van directo a los archivos, nunca al chat
+- Respuestas cortas y directas — sin introducciones ni resúmenes innecesarios
+- En tus respuestas luego de realizar modificaciones en el codigo, solo referencia el archivo, pero no generes codigo en tus respuestas dentro del chat donde hablamos.

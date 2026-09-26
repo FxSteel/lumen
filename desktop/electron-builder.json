@@ -1,0 +1,33 @@
+{
+  "appId": "com.fxsteel.nova-display",
+  "productName": "NOVA Display Player",
+  "files": [
+    "dist/**/*",
+    "!dist/mac*",
+    "!dist/win*",
+    "!dist/linux*",
+    "!dist/.icon*",
+    "package.json"
+  ],
+  "extraResources": [
+    { "from": "assets/nova.png", "to": "assets/nova.png" }
+  ],
+  "directories": {
+    "buildResources": "build"
+  },
+  "mac": {
+    "target": [
+      { "target": "dmg", "arch": ["arm64"] },
+      { "target": "dmg", "arch": ["x64"] }
+    ],
+    "icon": "assets/nova.png",
+    "category": "public.app-category.productivity",
+    "minimumSystemVersion": "11.0",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "identity": "-"
+  },
+  "win": {
+    "target": "nsis",
+    "artifactName": "${productName}-${version}-win.${ext}"
+  }
+}

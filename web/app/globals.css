@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@layer base {
+  .dark {
+    /* Dark mode CSS variables */
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 262 83% 58%;
+  }
+
+  body {
+    @apply bg-[#0f0f0f] text-gray-100;
+  }
+
+  input,
+  textarea,
+  select {
+    @apply bg-[#2a2a2a] border border-[#333] rounded text-white placeholder-gray-500;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply outline-none border-[#7C6FD8];
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-[#1a1a1a] rounded-lg border border-[#333] p-4 text-gray-100;
+  }
+
+  .btn-primary {
+    @apply px-3 py-2 bg-[#7C6FD8] hover:bg-[#6C5FC8] text-white rounded transition-colors text-sm;
+  }
+
+  .btn-secondary {
+    @apply px-3 py-2 bg-[#2a2a2a] hover:bg-[#333] text-gray-300 rounded transition-colors text-sm;
+  }
+
+  .btn-sm {
+    @apply px-2 py-1 text-xs;
+  }
+
+  .badge {
+    @apply inline-block px-2 py-1 bg-[#2a2a2a] text-gray-400 text-xs rounded;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}

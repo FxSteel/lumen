@@ -1,0 +1,256 @@
+CONSULTORIA TECNICA - APLICACION NOVA
+Fecha: 2026-02-25
+Proyecto revisado: /Users/fer/Desktop/nova
+
+============================================================
+1) RESUMEN EJECUTIVO
+============================================================
+Nova es una aplicacion web para operacion de contenido en vivo en contexto de iglesia/eventos.
+El producto ya cubre el flujo central: login, workspace activo, gestion de canciones/slides,
+integracion biblica (YouVersion) y salida en vivo para pantallas principal y escenario.
+
+Madurez general actual: MVP avanzado / pre-produccion.
+
+Estado sintetico:
+- Valor de negocio: alto y claro.
+- Flujo principal: funcional de punta a punta.
+- Riesgo tecnico principal: seguridad y gobernanza de APIs con service role.
+- Riesgo operativo principal: bajo nivel de testing automatizado.
+- Riesgo de mantenibilidad: medio-alto por deuda de estructura y logging excesivo.
+
+Recomendacion ejecutiva:
+- Si van a escalar usuarios/workspaces, priorizar hardening de auth/API en 2-3 semanas.
+- En paralelo, cerrar base de calidad (tests + observabilidad + runbooks).
+- Luego, pasar a roadmap de crecimiento (usuarios, integraciones, AI builder, multi-workspace).
+
+============================================================
+2) ALCANCE Y METODOLOGIA
+============================================================
+Se reviso codigo fuente real del repositorio (no solo documentacion historica), incluyendo:
+- Frontend Next.js App Router (rutas protegidas, operador, settings, live output).
+- Capa de estado y providers (auth, workspace, store Zustand, theme).
+- API routes server-side (bootstrap, workspaces, bible).
+- Integraciones externas (Supabase, YouVersion).
+- Estructura de componentes y deuda visible.
+
+============================================================
+3) PROPOSITO FUNCIONAL DEL PRODUCTO
+============================================================
+La aplicacion permite a un operador controlar contenido proyectado en tiempo real:
+
+A. Operacion de canciones
+- Crear canciones por workspace.
+- Editar metadata (autor, tonalidad, bpm).
+- Gestionar slides por cancion (tipo, contenido, posicion, font_size).
+
+B. Contenido biblico
+- Elegir version biblica (es/en) desde YouVersion.
+- Navegar libro/capitulo/versiculos.
+- Enviar versiculo seleccionado a salida en vivo.
+
+C. Broadcast en vivo
+- Pantalla principal (audiencia): slide, logo, anuncio, clear.
+- Pantalla escenario (musicos): contenido + hora + mensaje de escenario.
+- Sincronizacion entre ventanas por BroadcastChannel (baja latencia, mismo navegador/origen).
+
+D. Multi-tenant por workspace
+- Cada usuario opera en su workspace activo.
+- Configuracion por workspace: logo, anuncio, idioma y ajustes de stage.
+
+============================================================
+4) ARQUITECTURA ACTUAL
+============================================================
+Stack detectado:
+- Frontend: Next.js 16, React 19, TypeScript, Tailwind, shadcn/radix.
+- Auth y datos: Supabase (Auth, DB, Storage).
+- Estado cliente: Context providers + Zustand.
+- Integracion biblica: YouVersion API via API routes internas.
+- Realtime local: BroadcastChannel + localStorage fallback inicial.
+
+Diseno de alto nivel:
+- app/auth/*: login/signup/callback.
+- app/(protected)/*: operador, settings, live-output.
+- app/api/*: bootstrap/workspaces/bible.
+- components/operator/*: UI operativa y control de salida.
+- lib/*: auth, workspace, store, supabase, broadcast, utilidades.
+
+============================================================
+5) FORTALEZAS REALES
+============================================================
+1. Flujo E2E ya utilizable.
+- El usuario puede autenticarse, cargar workspace, operar contenido y proyectar.
+
+2. Modelo mental correcto para el dominio.
+- Separacion entre operador, pantalla principal y pantalla de escenario.
+
+3. Integracion biblica funcional y orientada al caso de uso.
+- Versiones, libros, capitulos y versiculos consumidos via rutas propias.
+
+4. Base UI consistente.
+- Estilo visual estable, layouts claros, UX operativa enfocada.
+
+5. Bootstrap idempotente de workspace.
+- Reduce friccion de onboarding para usuarios nuevos.
+
+============================================================
+6) HALLAZGOS CRITICOS (PRIORIDAD P0)
+============================================================
+P0-1: Validacion de token insuficiente en endpoints sensibles
+Rutas observadas:
+- app/api/bootstrap/route.ts
+- app/api/auth/workspaces/route.ts
+
+Situacion:
+- Se usa jwt-decode para extraer claims del token sin verificar firma/expiracion.
+
+Riesgo:
+- Riesgo de suplantacion/logica de autorizacion incorrecta si se acepta payload no validado.
+
+Recomendacion:
+- Siempre validar token con Supabase Auth getUser(token) o verificacion JWT criptografica.
+- Prohibir decisiones de autorizacion basadas solo en decode local.
+
+P0-2: Uso amplio de SERVICE ROLE sin una capa de policy estricta
+Situacion:
+- Varias rutas usan service role para operaciones de DB.
+
+Riesgo:
+- Error en validacion o filtro puede impactar aislamiento de tenants.
+
+Recomendacion:
+- Introducir capa server de autorizacion por actor/workspace.
+- Minimizar endpoints con service role y encapsular consultas criticas.
+- Agregar auditoria de acceso por workspace_id y user_id.
+
+============================================================
+7) HALLAZGOS ALTOS (PRIORIDAD P1)
+============================================================
+P1-1: Logging excesivo con datos operativos
+- Hay gran cantidad de console.log en frontend y backend, incluso con payloads y metadatos.
+Riesgo: ruido, fuga de informacion operativa, costo de debugging en produccion.
+Accion: politicas de log level + sanitizacion + remover logs de contenido en vivo.
+
+P1-2: Cobertura de pruebas automatizadas casi nula
+- Solo hay scripts manuales puntuales (ejemplo YouVersion), sin suite de regresion estable.
+Riesgo: cambios rompen flujos clave sin deteccion temprana.
+Accion: baseline de tests: auth/workspace API + operador critical path + smoke E2E.
+
+P1-3: Deuda de estructura y duplicacion de patrones Supabase
+- Convivencia de clientes/supabase wrappers y rutas de auth/workspace parcialmente redundantes.
+Riesgo: mantenimiento lento, errores de consistencia.
+Accion: consolidar cliente server/browser y estandar de acceso a datos.
+
+============================================================
+8) HALLAZGOS MEDIOS (P2)
+============================================================
+P2-1: README principal no describe el producto
+- Sigue plantilla default de Next.js.
+Impacto: onboarding tecnico lento.
+
+P2-2: Navegacion con modulos visibles pero deshabilitados
+- Usuarios, Integraciones, AI builder aparecen pero no activos.
+Impacto: expectativa funcional confusa.
+
+P2-3: Mucha documentacion historica en raiz
+- Hay decenas de archivos .md de entregas/fixes.
+Impacto: dificultad para distinguir documentacion vigente vs historica.
+
+P2-4: BroadcastChannel limita sincronizacion a mismo origen/navegador
+Impacto: correcto para setup local, pero no cubre operacion distribuida multi-dispositivo.
+
+============================================================
+9) EVALUACION DE MADUREZ
+============================================================
+Producto (funcional): 8/10
+Arquitectura (base): 7/10
+Seguridad: 5/10
+Testing/QA: 4/10
+Operabilidad (logs/runbooks): 5/10
+Mantenibilidad: 6/10
+
+Lectura final:
+- Buen producto y direccion funcional.
+- El mayor gap no es de feature, es de hardening.
+
+============================================================
+10) PLAN RECOMENDADO 30/60/90 DIAS
+============================================================
+Fase 0-30 dias (Hardening y control)
+1. Corregir validacion de tokens en todas las rutas server.
+2. Revisar y reducir uso de service role.
+3. Implementar middlewares/policies de autorizacion por workspace.
+4. Limpiar logging sensible y definir niveles (debug/info/warn/error).
+5. README tecnico real + diagrama simple de arquitectura.
+
+Fase 31-60 dias (Calidad y velocidad de cambio)
+1. Suite minima de tests:
+   - API: bootstrap, workspaces/active, bible routes.
+   - UI: operador (seleccion slide, broadcast, clear/logo/anuncio).
+2. Pipeline CI con lint + test + build obligatorio.
+3. Refactor de capa supabase (cliente unico por contexto).
+4. Ordenar documentacion: /docs/active y /docs/archive.
+
+Fase 61-90 dias (Escala funcional)
+1. Modulos hoy deshabilitados (Usuarios, Integraciones, AI builder).
+2. Mejoras de observabilidad (errores, metricas de uso, trazas).
+3. Preparar opcion de realtime distribuido (si requieren multi-dispositivo).
+
+============================================================
+11) BACKLOG PRIORIZADO (TOP 12)
+============================================================
+1. P0 - Verificacion de token robusta en bootstrap/workspaces auth.
+2. P0 - Guardrails de service role + auditoria por workspace.
+3. P1 - Eliminar logs sensibles y estandarizar logging.
+4. P1 - Tests API de autenticacion/workspace.
+5. P1 - Tests de flujo operador y salida en vivo.
+6. P1 - CI obligatorio con quality gates.
+7. P1 - Consolidar cliente Supabase y convenciones.
+8. P2 - README producto + setup real.
+9. P2 - Reorganizar documentacion historica.
+10. P2 - UX de modulos deshabilitados (ocultar o etiquetar roadmap).
+11. P2 - Politica de errores y mensajes al usuario final.
+12. P2 - KPI dashboard basico de operacion.
+
+============================================================
+12) KPIs SUGERIDOS
+============================================================
+Tecnicos
+- Change failure rate
+- Mean time to recovery
+- Test pass rate por rama
+- Errores 4xx/5xx por endpoint
+
+Producto/Operacion
+- Tiempo promedio login -> primera proyeccion
+- Latencia promedio operador -> pantalla principal
+- Cantidad de sesiones operadas por semana
+- Uso de funciones (slides, biblia, logo, anuncio, mensajes stage)
+
+============================================================
+13) CONCLUSION
+============================================================
+Nova ya tiene una base funcional valiosa y util para operacion real.
+La prioridad inmediata no es agregar muchas features nuevas, sino asegurar
+seguridad, calidad automatizada y estandarizacion tecnica.
+
+Con un ciclo de hardening de 4-6 semanas, el sistema puede pasar de MVP
+avanzado a plataforma confiable para escalar equipos, workspaces y uso continuo.
+
+============================================================
+14) EVIDENCIAS DE REVISION (MUESTRA)
+============================================================
+- app/(protected)/operator/page.tsx
+- components/operator/LiveOutputPanel.tsx
+- app/(protected)/live-output/main/page.tsx
+- app/(protected)/live-output/stage/page.tsx
+- app/api/bootstrap/route.ts
+- app/api/workspaces/active/route.ts
+- app/api/auth/workspaces/route.ts
+- app/api/bible/versions/route.ts
+- components/operator/BibleBrowser.tsx
+- lib/workspace-provider.tsx
+- lib/auth-provider.tsx
+- lib/broadcast.ts
+- components/layout/Sidebar.tsx
+
+FIN DEL INFORME
