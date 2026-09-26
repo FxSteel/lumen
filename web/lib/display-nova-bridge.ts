@@ -1,3 +1,6 @@
+import { PROTOCOL_VERSION } from '@nova/shared'
+import type { NativeState, ServerMessage } from '@nova/shared'
+
 let _globalBridge: DisplayNovaBridge | null = null
 
 export function getGlobalBridge(): DisplayNovaBridge | null {
@@ -32,11 +35,17 @@ export interface DisplayNovaScreen {
 export class DisplayNovaBridge {
   private socket: WebSocket | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null
+  private livenessTimeout: ReturnType<typeof setTimeout> | null = null
   private _isConnected = false
   private destroyed = false
 
+  private readonly HEARTBEAT_MS = 10000
+  private readonly LIVENESS_MS = 25000
+
   onConnectionChange?: (connected: boolean) => void
   onScreensDetected?: (screens: DisplayNovaScreen[]) => void
+  onState?: (state: NativeState) => void
 
   constructor() {
     this.connect()
@@ -60,12 +69,16 @@ export class DisplayNovaBridge {
         console.log('[Display-Nova] Connected')
         this._isConnected = true
         this.onConnectionChange?.(true)
+        // Handshake: announce our protocol version right after opening.
+        this.send({ type: 'hello', protocolVersion: PROTOCOL_VERSION })
         this.requestScreens()
+        this.startHeartbeat()
       }
 
       this.socket.onclose = () => {
         console.log('[Display-Nova] Disconnected')
         this._isConnected = false
+        this.stopHeartbeat()
         this.onConnectionChange?.(false)
         this.scheduleReconnect()
       }
@@ -73,6 +86,8 @@ export class DisplayNovaBridge {
       this.socket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data)
+          // Any inbound traffic proves the server is alive: reset the silence watchdog.
+          this.resetLiveness()
           this.handleMessage(message)
         } catch (err) {
           console.error('[Display-Nova] Failed to parse message:', err)
@@ -97,18 +112,62 @@ export class DisplayNovaBridge {
     }, 5000)
   }
 
-  private handleMessage(message: any) {
+  private startHeartbeat() {
+    this.stopHeartbeat()
+    if (this.destroyed) return
+    // Arm the silence watchdog immediately so a server that never talks still triggers reconnect.
+    this.resetLiveness()
+    // Proactively poke the server so a stalled connection surfaces as a missing reply.
+    this.heartbeatInterval = setInterval(() => {
+      this.send({ type: 'ping', t: Date.now() })
+    }, this.HEARTBEAT_MS)
+  }
+
+  private resetLiveness() {
+    if (this.destroyed) return
+    if (this.livenessTimeout) clearTimeout(this.livenessTimeout)
+    this.livenessTimeout = setTimeout(() => {
+      this.livenessTimeout = null
+      console.warn('[Display-Nova] Server silent; closing socket to force reconnect')
+      // Closing lets the existing onclose → scheduleReconnect path run.
+      this.socket?.close()
+    }, this.LIVENESS_MS)
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval)
+      this.heartbeatInterval = null
+    }
+    if (this.livenessTimeout) {
+      clearTimeout(this.livenessTimeout)
+      this.livenessTimeout = null
+    }
+  }
+
+  private handleMessage(message: ServerMessage | { type: 'ping'; t: number }) {
     switch (message.type) {
+      case 'hello-ack':
+        console.log('[Display-Nova] Handshake ack, protocol', message.protocolVersion)
+        break
       case 'screens-detected':
         this.onScreensDetected?.(message.payload?.screens ?? [])
         break
       case 'screen-assignment-confirmed':
         console.log('[Display-Nova] Screen assignment confirmed')
         break
+      case 'state':
+        this.onState?.(message.payload)
+        break
+      case 'ping':
+        // Server-initiated heartbeat: echo the timestamp back.
+        this.send({ type: 'pong', t: message.t })
+        break
       case 'pong':
+        // Liveness already refreshed by resetLiveness() on receipt.
         break
       default:
-        console.log('[Display-Nova] Unknown message type:', message.type)
+        console.log('[Display-Nova] Unknown message type:', (message as { type?: string }).type)
     }
   }
 
@@ -171,6 +230,8 @@ export class DisplayNovaBridge {
 
   disconnect() {
     this.destroyed = true
+
+    this.stopHeartbeat()
 
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
