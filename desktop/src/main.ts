@@ -3,6 +3,7 @@ import { app, BrowserWindow, Tray, Menu, nativeImage, screen as electronScreen, 
 import { createSetupWindow, initWindowManager, openOutputWindowForRole, sendToOutputWindow, getRoleForWebContents, closeOutputWindowForScreen } from "./main/windowManager";
 import { registerIpcHandlers } from "./main/ipc";
 import { startWsServer, stopWsServer } from "./main/wsServer";
+import * as assetCache from "./main/assetCache";
 import type { SlideData, DisplayMode, SongBackground, DisplayMedia, StageTime, StageMessage, StageConfig } from "./shared/display";
 import type { ScreenAssignment } from "./main/wsServer";
 import type { ServerCapabilities } from "@nova/shared";
@@ -98,6 +99,8 @@ function onAssignScreen(assignment: ScreenAssignment, respond: () => void) {
 function onSongBackground(bg: SongBackground) {
   console.log(`[Main] song-background → ${bg.backgroundType}`);
   lastBackground = bg;
+  // LATENCY: calentar el fondo en disco antes de proyectar (fire-and-forget).
+  if (bg.backgroundUrl) assetCache.prefetch(bg.backgroundUrl);
   sendToOutputWindow("main", "nova:songBackground", bg);
   sendToOutputWindow("stage", "nova:songBackground", bg);
   ndiHandleBackground(bg);
@@ -135,6 +138,8 @@ function onDisplayMedia(media: DisplayMedia) {
 
 function onPreloadMedia(media: DisplayMedia) {
   console.log(`[Main] preload-media → ${media.mediaType} ${media.url}`);
+  // LATENCY: calentar la media en disco antes de proyectar (fire-and-forget).
+  if (media.url) assetCache.prefetch(media.url);
   sendToOutputWindow("main", "nova:preloadMedia", media);
 }
 
@@ -184,6 +189,11 @@ async function bootstrap() {
   app.setActivationPolicy("accessory");
 
   const preloadPath = preloadUrl();
+  // LATENCY: resolver de assets → cache de disco del main. ensureCached nunca
+  // lanza; devuelve una ruta file:// local o la URL original como fallback.
+  ipcMain.handle("nova:resolveAsset", async (_event, url: string) => {
+    return assetCache.ensureCached(url);
+  });
   initWindowManager(rendererUrl("output"), preloadPath);
   createSetupWindow(rendererUrl("setup"), preloadPath);
   registerIpcHandlers(rendererUrl("output"), preloadPath);

@@ -8,17 +8,25 @@ import type {
 } from "@shared/display";
 import { resolveTypography, novaSizeToVw, transitionDurationMs } from "@shared/display";
 
-// Cache de media descargada: URL remota → blob URL local
-const mediaCache = new Map<string, string>();
-
-async function cacheMedia(url: string): Promise<string> {
-  const cached = mediaCache.get(url);
-  if (cached) return cached;
-  const res = await fetch(url);
-  const blob = await res.blob();
-  const blobUrl = URL.createObjectURL(blob);
-  mediaCache.set(url, blobUrl);
-  return blobUrl;
+/**
+ * LATENCY: resuelve una URL remota a su ruta local cacheada (file://) a través
+ * del cache de disco del proceso main (window.nova.resolveAsset). Si el asset
+ * ya fue calentado en preload, la resolución es instantánea. Ante cualquier
+ * fallo (o si el bridge no expone resolveAsset) devuelve la URL original para
+ * conservar el comportamiento previo (fallback remoto).
+ */
+async function resolveAsset(url: string): Promise<string> {
+  if (!url) return url;
+  try {
+    const fn = (window.nova as unknown as {
+      resolveAsset?: (u: string) => Promise<string>;
+    }).resolveAsset;
+    if (!fn) return url;
+    const resolved = await fn(url);
+    return resolved || url;
+  } catch {
+    return url;
+  }
 }
 
 // Fuentes empaquetadas (ver @font-face en styles.css) + fallbacks del sistema.
@@ -176,15 +184,24 @@ export default function OutputScreen() {
       setMode({ mode: "slide" });
     });
     window.nova.onDisplayMode((m) => { setMode(m); setMedia(null); });
-    window.nova.onSongBackground((bg) => setBackground(bg));
-    window.nova.onPreloadMedia(async (m) => {
-      try { await cacheMedia(m.url); } catch { /* no-op */ }
+    window.nova.onSongBackground(async (bg) => {
+      // Resolver el fondo a su ruta local cacheada antes de pintarlo.
+      if (bg.backgroundType !== "none" && bg.backgroundUrl) {
+        const url = await resolveAsset(bg.backgroundUrl);
+        setBackground({ ...bg, backgroundUrl: url });
+      } else {
+        setBackground(bg);
+      }
     });
-    window.nova.onDisplayMedia((m) => {
+    window.nova.onPreloadMedia((m) => {
+      // Calentar el cache (el main ya prefetchea; esto lo refuerza desde el renderer).
+      void resolveAsset(m.url);
+    });
+    window.nova.onDisplayMedia(async (m) => {
       setSlide(null);
       setMode({ mode: "slide" });
-      const cached = mediaCache.get(m.url);
-      setMedia({ ...m, url: cached ?? m.url });
+      const url = await resolveAsset(m.url);
+      setMedia({ ...m, url });
     });
     // Avisar al main process que los listeners están listos → recibir estado cacheado
     window.nova.signalReady();
