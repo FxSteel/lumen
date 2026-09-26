@@ -25,6 +25,10 @@ interface ScreenSelectorProps {
   displayNovaScreens?: DisplayNovaScreen[]
   onDisplayNovaAssignScreen?: (screenId: string, role: 'main' | 'stage' | 'none') => void
   onSendNdiConfig?: (outputs: NdiOutput[]) => void
+  /** Whether the native app reports NDI as actually usable. `undefined` = state not yet received (unknown). */
+  ndiAvailable?: boolean
+  /** Native (Display-Nova) app version reported via the `state` message. */
+  nativeVersion?: string
 }
 
 export default function ScreenSelector({
@@ -32,6 +36,8 @@ export default function ScreenSelector({
   displayNovaScreens = [],
   onDisplayNovaAssignScreen,
   onSendNdiConfig,
+  ndiAvailable,
+  nativeVersion,
 }: ScreenSelectorProps) {
   const [screens, setScreens] = useState<Screen[]>([])
   const [screenAssignments, setScreenAssignments] = useState<ScreenAssignment>({})
@@ -179,6 +185,9 @@ export default function ScreenSelector({
     <div className={`flex items-center gap-2 ${displayNovaConnected ? 'text-green-400' : 'text-gray-500'}`}>
       <div className={`w-2 h-2 rounded-full ${displayNovaConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`} />
       <span className="text-xs">{displayNovaConnected ? 'Display-Nova Connected' : 'Display-Nova Offline'}</span>
+      {displayNovaConnected && nativeVersion && (
+        <span className="text-[10px] text-gray-500 font-mono">v{nativeVersion}</span>
+      )}
     </div>
   )
 
@@ -196,7 +205,7 @@ export default function ScreenSelector({
         ) : (
           <DisplayNovaScreenSection screens={displayNovaScreens} onAssign={onDisplayNovaAssignScreen} connected={displayNovaConnected} />
         )}
-        <NdiSection onSendConfig={onSendNdiConfig} />
+        <NdiSection onSendConfig={onSendNdiConfig} ndiAvailable={ndiAvailable} />
       </div>
     )
   }
@@ -435,7 +444,17 @@ function DisplayNovaScreenSection({
 
 const NDI_STORAGE_KEY = 'displayNova-ndiOutputs'
 
-function NdiSection({ onSendConfig }: { onSendConfig?: (outputs: NdiOutput[]) => void }) {
+function NdiSection({
+  onSendConfig,
+  ndiAvailable,
+}: {
+  onSendConfig?: (outputs: NdiOutput[]) => void
+  /** undefined = native state not yet received (unknown); false = NDI SDK missing on the display machine. */
+  ndiAvailable?: boolean
+}) {
+  // NDI outputs won't emit unless the native app reports NDI as available.
+  const ndiUnavailable = ndiAvailable === false
+  const ndiUnknown = ndiAvailable === undefined
   const [outputs, setOutputs] = useState<NdiOutput[]>(() => {
     if (typeof window === 'undefined') return []
     try {
@@ -487,6 +506,29 @@ function NdiSection({ onSendConfig }: { onSendConfig?: (outputs: NdiOutput[]) =>
         </button>
       </div>
 
+      {/* NDI availability status from the native `state` message */}
+      {ndiUnavailable ? (
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md flex items-start gap-2">
+          <AlertCircle size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm text-amber-400 font-medium">NDI no disponible</p>
+            <p className="text-xs text-amber-400/80 mt-1">
+              Instala NDI Tools en el equipo de pantallas. Las salidas NDI configuradas no se emitirán hasta que esté disponible.
+            </p>
+          </div>
+        </div>
+      ) : ndiUnknown ? (
+        <div className="flex items-center gap-2 text-gray-500">
+          <div className="w-2 h-2 rounded-full bg-gray-500" />
+          <span className="text-xs">Estado de NDI desconocido — esperando al equipo de pantallas…</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-green-400">
+          <div className="w-2 h-2 rounded-full bg-green-400" />
+          <span className="text-xs">NDI disponible</span>
+        </div>
+      )}
+
       {outputs.length === 0 && (
         <p className="text-xs text-gray-500">
           Sin salidas NDI configuradas. Agrega una para enviar contenido a OBS u otras plataformas en la red.
@@ -494,7 +536,12 @@ function NdiSection({ onSendConfig }: { onSendConfig?: (outputs: NdiOutput[]) =>
       )}
 
       {outputs.map((output) => (
-        <div key={output.id} className="bg-[#1a1a1a] border border-[#333] rounded-md p-3 space-y-3">
+        <div
+          key={output.id}
+          className={`bg-[#1a1a1a] border rounded-md p-3 space-y-3 ${
+            ndiUnavailable ? 'border-amber-500/30 opacity-60' : 'border-[#333]'
+          }`}
+        >
           {/* Name */}
           <div className="flex items-center gap-2">
             <input
@@ -542,6 +589,9 @@ function NdiSection({ onSendConfig }: { onSendConfig?: (outputs: NdiOutput[]) =>
           {/* Status hint */}
           <p className="text-xs text-gray-600">
             Stream: <span className="text-gray-400 font-mono">{output.name || '—'}</span>
+            {ndiUnavailable && (
+              <span className="text-amber-400 ml-2">· no se emitirá (NDI no disponible)</span>
+            )}
           </p>
         </div>
       ))}
