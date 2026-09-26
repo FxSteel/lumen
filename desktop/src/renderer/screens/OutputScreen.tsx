@@ -17,6 +17,10 @@ import { resolveTypography, novaSizeToVw, transitionDurationMs } from "@shared/d
  */
 async function resolveAsset(url: string): Promise<string> {
   if (!url) return url;
+  // En dev el renderer corre en http://localhost; Chromium bloquea sub-recursos
+  // file:// desde un origen http, así que ahí usamos la URL remota (sin cache).
+  // En producción el renderer es file://, donde el cache local sí carga.
+  if (typeof location !== "undefined" && location.protocol !== "file:") return url;
   try {
     const fn = (window.nova as unknown as {
       resolveAsset?: (u: string) => Promise<string>;
