@@ -6,6 +6,10 @@
  */
 
 import type { Typography, TransitionType } from './contract';
+import { TRANSITION_MS } from './contract';
+
+/** Ancho de referencia (px) en el que se expresan las "unidades Nova". */
+export const NOVA_REFERENCE_WIDTH = 1920;
 
 /** Familias soportadas → fuentes que DEBEN estar empaquetadas en ambos lados. */
 export const SUPPORTED_FONTS = ['Inter', 'Poppins', 'Montserrat', 'Roboto Flex', 'Open Sans'] as const;
@@ -59,12 +63,10 @@ export function resolveTypography(input?: Partial<Typography> | null): Typograph
  * Única fórmula de escala — web y nativo deben usar ESTA, no una propia.
  */
 export function novaSizeToVw(sizeNovaPx: number): number {
-  return sizeNovaPx / 19.2;
+  return sizeNovaPx / (NOVA_REFERENCE_WIDTH / 100);
 }
 
-/** ms de una transición, sin repetir la tabla en cada lado. */
+/** ms de una transición — lee la tabla única (no la duplica). */
 export function transitionDurationMs(t: TransitionType | undefined): number {
-  if (t === 'fade') return 400;
-  if (t === 'fade-slow') return 800;
-  return 0;
+  return TRANSITION_MS[t ?? 'none'];
 }

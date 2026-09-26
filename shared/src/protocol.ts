@@ -47,9 +47,7 @@ export interface ServerCapabilities {
   ndiAvailable: boolean;
 }
 
-export interface NativeState {
-  version: string;
-  ndiAvailable: boolean;
+export interface NativeState extends ServerCapabilities {
   screens: DisplayScreen[];
 }
 
