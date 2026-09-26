@@ -1,16 +1,18 @@
 import path from "path";
 import { app, BrowserWindow, Tray, Menu, nativeImage, screen as electronScreen, ipcMain } from "electron";
-import { createSetupWindow, initWindowManager, openOutputWindowForRole, sendToOutputWindow, getRoleForWebContents } from "./main/windowManager";
+import { createSetupWindow, initWindowManager, openOutputWindowForRole, sendToOutputWindow, getRoleForWebContents, closeOutputWindowForScreen } from "./main/windowManager";
 import { registerIpcHandlers } from "./main/ipc";
-import { startWsServer } from "./main/wsServer";
+import { startWsServer, stopWsServer } from "./main/wsServer";
 import type { SlideData, DisplayMode, SongBackground, DisplayMedia, StageTime, StageMessage, StageConfig } from "./shared/display";
 import type { ScreenAssignment } from "./main/wsServer";
+import type { ServerCapabilities } from "@nova/shared";
 import {
   handleNdiConfig,
   ndiHandleSlide,
   ndiHandleDisplayMode,
   ndiHandleBackground,
   destroyAllNdiSenders,
+  isNdiAvailable,
 } from "./main/ndiManager";
 import type { NdiOutput } from "./main/ndiManager";
 
@@ -136,6 +138,35 @@ function onPreloadMedia(media: DisplayMedia) {
   sendToOutputWindow("main", "nova:preloadMedia", media);
 }
 
+function onCloseScreen(screenId: string) {
+  console.log(`[Main] close-screen → screenId="${screenId}"`);
+  const closed = closeOutputWindowForScreen(screenId);
+  if (!closed) {
+    console.warn(`[Main] close-screen: no output window mapped to screenId="${screenId}"`);
+  }
+}
+
+// Capacidades que el nativo reporta a la web (para que el operador vea salud real).
+function getCapabilities(): ServerCapabilities {
+  return { version: app.getVersion(), ndiAvailable: isNdiAvailable() };
+}
+
+// Errores del servidor WS. EADDRINUSE = otra instancia (o proceso zombie) tiene el 9877.
+function onWsError(err: NodeJS.ErrnoException) {
+  if (err.code === "EADDRINUSE") {
+    const notice =
+      "[Main] El puerto 9877 ya está en uso — otra instancia de NOVA (o un proceso previo) " +
+      "sigue escuchando. El servidor WebSocket NO arrancó. Cierra la otra instancia y reinicia.";
+    console.error(notice);
+    if (tray) {
+      tray.setToolTip("NOVA Display — ERROR: puerto 9877 en uso (WS no disponible)");
+    }
+    // No crashear: la app sigue viva en el tray para que el usuario pueda reaccionar.
+    return;
+  }
+  console.error(`[Main] WS server error: ${err.message}`);
+}
+
 // El renderer avisa cuando ya registró sus listeners — reenviar el último estado
 ipcMain.on("nova:outputReady", (event) => {
   const role = getRoleForWebContents(event.sender.id);
@@ -156,22 +187,39 @@ async function bootstrap() {
   initWindowManager(rendererUrl("output"), preloadPath);
   createSetupWindow(rendererUrl("setup"), preloadPath);
   registerIpcHandlers(rendererUrl("output"), preloadPath);
-  startWsServer(onSlide, onAssignScreen, onDisplayMode, onSongBackground, onNdiConfig, onStageTime, onStageMessage, onStageConfig, onDisplayMedia, onPreloadMedia);
+  startWsServer(onSlide, onAssignScreen, onDisplayMode, onSongBackground, onNdiConfig, onStageTime, onStageMessage, onStageConfig, onDisplayMedia, onPreloadMedia, onCloseScreen, getCapabilities, onWsError);
   createTray(preloadPath);
 }
 
-app.whenReady().then(bootstrap);
+// ── Single-instance lock ──────────────────────────────────────────────────────
+// Solo puede correr UNA instancia: la segunda cede el lock y se cierra. Así
+// evitamos dos servidores WS peleando por el puerto 9877 (EADDRINUSE) y dos
+// tray icons.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  // Si se intenta abrir una segunda instancia, traemos el Setup al frente.
+  app.on("second-instance", () => {
     createSetupWindow(rendererUrl("setup"), preloadUrl());
-  }
-});
+  });
 
-app.on("window-all-closed", () => {
-  // no-op: el Tray mantiene la app viva
-});
+  app.whenReady().then(bootstrap);
 
-app.on("before-quit", () => {
-  destroyAllNdiSenders();
-});
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createSetupWindow(rendererUrl("setup"), preloadUrl());
+    }
+  });
+
+  app.on("window-all-closed", () => {
+    // no-op: el Tray mantiene la app viva
+  });
+
+  app.on("before-quit", () => {
+    // Cerrar el servidor WS (heartbeat + sockets) además de destruir NDI.
+    stopWsServer();
+    destroyAllNdiSenders();
+  });
+}

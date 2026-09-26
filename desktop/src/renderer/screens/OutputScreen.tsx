@@ -1,5 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { SlideData, DisplayMode, SongBackground, DisplayMedia } from "@shared/display";
+import type {
+  SlideData,
+  DisplayMode,
+  SongBackground,
+  DisplayMedia,
+  Typography,
+} from "@shared/display";
+import { resolveTypography, novaSizeToVw, transitionDurationMs } from "@shared/display";
 
 // Cache de media descargada: URL remota → blob URL local
 const mediaCache = new Map<string, string>();
@@ -14,23 +21,72 @@ async function cacheMedia(url: string): Promise<string> {
   return blobUrl;
 }
 
-function resolveTypography(slide: SlideData) {
-  const t = slide.songTypography ?? {};
+// Fuentes empaquetadas (ver @font-face en styles.css) + fallbacks del sistema.
+function fontStack(family: string): string {
+  return `"${family}", "Segoe UI", system-ui, sans-serif`;
+}
+
+/**
+ * Convierte el Typography resuelto (completo, sin undefined) en estilos inline.
+ * Aquí está el arreglo del bug: color / fontFamily / textShadow / textTransform
+ * se APLICAN, en vez de perderse. Un solo motor (`resolveTypography`) decide.
+ */
+function typographyStyle(typo: Typography): React.CSSProperties {
   return {
-    fontSize:      t.fontSize      ?? slide.fontSize      ?? 100,
-    lineHeight:    t.lineHeight    ?? slide.lineHeight    ?? 1.2,
-    letterSpacing: t.letterSpacing ?? slide.letterSpacing ?? 0,
-    fontWeight:    t.fontWeight    ?? slide.fontWeight    ?? 500,
-    textAlign:     slide.textAlign ?? "center"
+    color: typo.color,
+    fontFamily: fontStack(typo.fontFamily ?? "Inter"),
+    fontWeight: typo.fontWeight,
+    lineHeight: typo.lineHeight,
+    letterSpacing: `${typo.letterSpacing}px`,
+    textShadow: typo.textShadow ?? undefined,
+    textTransform: typo.textTransform,
+    textAlign: typo.textAlign,
   };
 }
 
-function BibleVerseSlide({ slide }: { slide: SlideData }) {
-  if (!slide.verseText) return null;
+/**
+ * Fade compartido con la web (/live-output/main): al cambiar de diapositiva,
+ * se hace fade-out del contenido actual, se intercambia, y fade-in del nuevo,
+ * con la duración de `slide.transition` (none=0 → intercambio instantáneo).
+ */
+function useSlideFade(slide: SlideData | null) {
+  const [rendered, setRendered] = useState<SlideData | null>(slide);
+  const [opacity, setOpacity] = useState(1);
+  const [durationMs, setDurationMs] = useState(0);
+  const prevRef = useRef<SlideData | null>(slide);
 
-  const fontSize = slide.fontSize ?? 80;
-  const targetVw = (fontSize * 1.333) / 19.2;
-  const align = (slide.textAlign ?? "center") as React.CSSProperties["textAlign"];
+  useEffect(() => {
+    if (slide === prevRef.current) return;
+    prevRef.current = slide;
+
+    const dur = transitionDurationMs(slide?.transition);
+
+    // Sin transición (o sin slide): intercambio instantáneo, opacidad plena.
+    if (dur <= 0 || !slide) {
+      setDurationMs(0);
+      setRendered(slide);
+      setOpacity(1);
+      return;
+    }
+
+    // Fade-out del contenido actual…
+    setDurationMs(dur);
+    setOpacity(0);
+    // …y tras la duración, intercambio + fade-in del nuevo.
+    const t = window.setTimeout(() => {
+      setRendered(slide);
+      setOpacity(1);
+    }, dur);
+    return () => window.clearTimeout(t);
+  }, [slide]);
+
+  return { rendered, opacity, durationMs };
+}
+
+function BibleVerseSlide({ slide }: { slide: SlideData }) {
+  const typo = resolveTypography(slide.typography);
+  const baseStyle = typographyStyle(typo);
+  const targetVw = novaSizeToVw(typo.fontSize);
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLParagraphElement>(null);
 
@@ -55,6 +111,8 @@ function BibleVerseSlide({ slide }: { slide: SlideData }) {
     el.style.fontSize = `${lo}vw`;
   }, [slide.verseText, targetVw]);
 
+  if (!slide.verseText) return null;
+
   const referenceLabel =
     slide.projectedReferenceLabel ??
     (slide.displayReference
@@ -65,17 +123,16 @@ function BibleVerseSlide({ slide }: { slide: SlideData }) {
     <div
       ref={containerRef}
       className="slide-content"
-      style={{ textAlign: align, paddingLeft: "8vw", paddingRight: "8vw" }}
+      style={{ textAlign: typo.textAlign, paddingLeft: "8vw", paddingRight: "8vw" }}
     >
-      <p
-        ref={textRef}
-        className="slide-text"
-        style={{ fontSize: `${targetVw}vw`, lineHeight: 1.4 }}
-      >
+      <p ref={textRef} className="slide-text" style={{ ...baseStyle, fontSize: `${targetVw}vw` }}>
         {slide.verseText}
       </p>
       {referenceLabel && (
-        <p className="bible-reference" style={{ fontSize: `${targetVw * 0.4}vw` }}>
+        <p
+          className="bible-reference"
+          style={{ fontSize: `${targetVw * 0.4}vw`, fontFamily: baseStyle.fontFamily }}
+        >
           {referenceLabel}
         </p>
       )}
@@ -84,23 +141,16 @@ function BibleVerseSlide({ slide }: { slide: SlideData }) {
 }
 
 function SongSlide({ slide }: { slide: SlideData }) {
-  const typo = resolveTypography(slide);
-  const fontSizeVw = (typo.fontSize / 100) * 5;
+  const typo = resolveTypography(slide.typography);
+  const baseStyle = typographyStyle(typo);
+  const fontSizeVw = novaSizeToVw(typo.fontSize);
+  // Formato nuevo: `label`. Backward-compat: `reference`.
+  const label = slide.label ?? slide.reference;
 
   return (
-    <div className="slide-content" style={{ textAlign: typo.textAlign as React.CSSProperties["textAlign"] }}>
-      {slide.reference && (
-        <p className="slide-reference">{slide.reference}</p>
-      )}
-      <p
-        className="slide-text"
-        style={{
-          fontSize:      `${fontSizeVw}vw`,
-          lineHeight:    typo.lineHeight,
-          letterSpacing: `${typo.letterSpacing}px`,
-          fontWeight:    typo.fontWeight
-        }}
-      >
+    <div className="slide-content" style={{ textAlign: typo.textAlign }}>
+      {label && <p className="slide-reference">{label}</p>}
+      <p className="slide-text" style={{ ...baseStyle, fontSize: `${fontSizeVw}vw` }}>
         {slide.content}
       </p>
     </div>
@@ -112,6 +162,10 @@ export default function OutputScreen() {
   const [mode, setMode] = useState<DisplayMode>({ mode: "slide" });
   const [background, setBackground] = useState<SongBackground | null>(null);
   const [media, setMedia] = useState<DisplayMedia | null>(null);
+
+  // Fade compartido: `renderedSlide` es lo que se pinta; `opacity`/`durationMs`
+  // animan la transición. Hook llamado siempre (antes de cualquier early return).
+  const { rendered: renderedSlide, opacity, durationMs } = useSlideFade(slide);
 
   useEffect(() => {
     window.nova.onSlide((data) => {
@@ -185,7 +239,7 @@ export default function OutputScreen() {
     );
   }
 
-  if (!slide) {
+  if (!renderedSlide) {
     return (
       <main className="output-screen">
         {bgLayer}
@@ -194,15 +248,25 @@ export default function OutputScreen() {
     );
   }
 
+  const isBible = renderedSlide.type === "bible_verse";
+
   return (
     <main className="output-screen output-slide">
-      {slide.type !== "bible_verse" && bgLayer}
-      {slide.type !== "bible_verse" && hasBg && <div className="bg-overlay" />}
+      {!isBible && bgLayer}
+      {!isBible && hasBg && <div className="bg-overlay" />}
 
-      {slide.type === "bible_verse"
-        ? <BibleVerseSlide slide={slide} />
-        : <SongSlide slide={slide} />
-      }
+      <div
+        className="slide-fade"
+        style={{
+          opacity,
+          transition: durationMs > 0 ? `opacity ${durationMs}ms ease-in-out` : "none",
+        }}
+      >
+        {isBible
+          ? <BibleVerseSlide slide={renderedSlide} />
+          : <SongSlide slide={renderedSlide} />
+        }
+      </div>
     </main>
   );
 }

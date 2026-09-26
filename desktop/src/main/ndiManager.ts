@@ -12,17 +12,18 @@
  *   C:\Program Files\NDI\NDI 5 Tools\Processing.NDI.Lib.x64.dll
  */
 
-import type { SlideData, SongBackground, DisplayMode } from "../shared/display";
+import path from "path";
+import fs from "fs";
+import { app } from "electron";
+import type { SlideData, SongBackground, DisplayMode, NdiOutput } from "@nova/shared";
+import { resolveTypography, novaSizeToVw } from "@nova/shared";
+
+// Re-export the shared NdiOutput type so existing importers (e.g. main.ts,
+// which does `import type { NdiOutput } from "./main/ndiManager"`) keep working
+// without a code change on their side.
+export type { NdiOutput };
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-
-export interface NdiOutput {
-  id: string;
-  name: string;
-  sendLyrics: boolean;
-  sendBackground: boolean;
-  sendLogo: boolean;
-}
 
 interface NdiSenderEntry {
   /** Opaque NDI sender pointer (held as BigInt) */
@@ -43,6 +44,9 @@ const NDI_LIB_PATHS = [
   // macOS (NDI Tools installer)
   "/usr/local/lib/libndi.dylib",
   "/Library/NDI SDK for Apple/lib/macOS/libndi.dylib",
+  // macOS Apple Silicon (Homebrew — `brew install ndi` links here)
+  "/opt/homebrew/lib/libndi.dylib",
+  "/opt/homebrew/lib/libndi.4.dylib",
   // Windows
   "C:\\Program Files\\NDI\\NDI 5 Tools\\Processing.NDI.Lib.x64.dll",
   "Processing.NDI.Lib.x64.dll",
@@ -58,7 +62,102 @@ let ndi: {
 
 let createCanvas: ((w: number, h: number) => any) | null = null;
 
+let fontsRegistered = false;
+
 const senders = new Map<string, NdiSenderEntry>();
+
+// ─── Packaged fonts ────────────────────────────────────────────────────────
+//
+// The family names below MUST match exactly what resolveTypography() emits
+// (SUPPORTED_FONTS in @nova/shared: "Inter", "Poppins", "Montserrat",
+// "Roboto Flex", "Open Sans") and what the renderer's @font-face declares,
+// otherwise node-canvas silently falls back to the system default.
+//
+// Weights used by NOVA slides: 400 (Regular), 500 (Medium), 600 (SemiBold),
+// 700 (Bold). Drop the matching files into desktop/assets/fonts/ — see the
+// README there for the exact filename → family/weight mapping.
+interface FontFace {
+  family: string;
+  weight: number;
+  file: string;
+}
+
+const PACKAGED_FONTS: readonly FontFace[] = [
+  { family: "Inter",       weight: 400, file: "Inter-Regular.ttf" },
+  { family: "Inter",       weight: 500, file: "Inter-Medium.ttf" },
+  { family: "Inter",       weight: 600, file: "Inter-SemiBold.ttf" },
+  { family: "Inter",       weight: 700, file: "Inter-Bold.ttf" },
+
+  { family: "Poppins",     weight: 400, file: "Poppins-Regular.ttf" },
+  { family: "Poppins",     weight: 500, file: "Poppins-Medium.ttf" },
+  { family: "Poppins",     weight: 600, file: "Poppins-SemiBold.ttf" },
+  { family: "Poppins",     weight: 700, file: "Poppins-Bold.ttf" },
+
+  { family: "Montserrat",  weight: 400, file: "Montserrat-Regular.ttf" },
+  { family: "Montserrat",  weight: 500, file: "Montserrat-Medium.ttf" },
+  { family: "Montserrat",  weight: 600, file: "Montserrat-SemiBold.ttf" },
+  { family: "Montserrat",  weight: 700, file: "Montserrat-Bold.ttf" },
+
+  { family: "Roboto Flex", weight: 400, file: "RobotoFlex-Regular.ttf" },
+  { family: "Roboto Flex", weight: 500, file: "RobotoFlex-Medium.ttf" },
+  { family: "Roboto Flex", weight: 600, file: "RobotoFlex-SemiBold.ttf" },
+  { family: "Roboto Flex", weight: 700, file: "RobotoFlex-Bold.ttf" },
+
+  { family: "Open Sans",   weight: 400, file: "OpenSans-Regular.ttf" },
+  { family: "Open Sans",   weight: 500, file: "OpenSans-Medium.ttf" },
+  { family: "Open Sans",   weight: 600, file: "OpenSans-SemiBold.ttf" },
+  { family: "Open Sans",   weight: 700, file: "OpenSans-Bold.ttf" },
+];
+
+/** Directory that holds the packaged font files.
+ *  Resolved the same way as the tray icon (see main.ts): in dev the repo
+ *  `assets/` dir, when packaged the `assets/` copied under resourcesPath.
+ *  Uses app.getAppPath() rather than __dirname so the deeper nesting of this
+ *  module's compiled output (dist/main/main/) doesn't break the path. */
+function fontsDir(): string {
+  try {
+    return app.isPackaged
+      ? path.join(process.resourcesPath, "assets", "fonts")
+      : path.join(app.getAppPath(), "assets", "fonts");
+  } catch {
+    // `app` unavailable (e.g. running outside Electron) — best-effort fallback.
+    return path.join(process.cwd(), "assets", "fonts");
+  }
+}
+
+/** Register the packaged fonts with node-canvas. Every file is guarded:
+ *  a missing file logs a warning and is skipped, and never throws — so the
+ *  NDI pipeline degrades gracefully (falls back to the system sans-serif)
+ *  when the real binaries haven't been dropped in yet. */
+function registerPackagedFonts(canvasModule: any) {
+  if (fontsRegistered) return;
+  fontsRegistered = true; // only attempt once, whatever the outcome
+
+  const registerFont = canvasModule?.registerFont;
+  if (typeof registerFont !== "function") {
+    console.warn("[NDI] canvas.registerFont unavailable — using system fonts");
+    return;
+  }
+
+  const dir = fontsDir();
+  let ok = 0;
+  let missing = 0;
+  for (const { family, weight, file } of PACKAGED_FONTS) {
+    const full = path.join(dir, file);
+    try {
+      if (!fs.existsSync(full)) {
+        missing++;
+        console.warn(`[NDI] font missing (skipped): ${file} → "${family}" ${weight}`);
+        continue;
+      }
+      registerFont(full, { family, weight: String(weight) });
+      ok++;
+    } catch (err) {
+      console.warn(`[NDI] failed to register font ${file}:`, err);
+    }
+  }
+  console.log(`[NDI] fonts registered: ${ok}/${PACKAGED_FONTS.length} (missing: ${missing}) from ${dir}`);
+}
 
 // ─── Initialisation ──────────────────────────────────────────────────────────
 
@@ -142,7 +241,11 @@ function tryLoadNdi(): boolean {
 function tryLoadCanvas(): boolean {
   if (createCanvas) return true;
   try {
-    createCanvas = require("canvas").createCanvas;
+    const canvasModule = require("canvas");
+    // Register packaged fonts BEFORE any canvas/context is created, otherwise
+    // node-canvas won't pick them up. Guarded so missing files never crash.
+    registerPackagedFonts(canvasModule);
+    createCanvas = canvasModule.createCanvas;
     return true;
   } catch {
     console.warn("[NDI] canvas module not available — NDI disabled");
@@ -152,6 +255,13 @@ function tryLoadCanvas(): boolean {
 
 function ensureReady(): boolean {
   return tryLoadCanvas() && tryLoadNdi();
+}
+
+/** Whether the NDI SDK is loaded and initialized. Reflects the real state so
+ *  the main process can report NDI availability in the `state` message.
+ *  Actively probes (idempotently) if not yet loaded. Never imports from main. */
+export function isNdiAvailable(): boolean {
+  return tryLoadNdi();
 }
 
 // ─── Frame sending ───────────────────────────────────────────────────────────
@@ -242,21 +352,39 @@ export function ndiHandleSlide(slide: SlideData) {
     const text     = isBible ? (slide.verseText ?? "") : (slide.content ?? "");
     if (!text) continue;
 
-    const typo      = slide.songTypography;
-    const fsScale   = typo?.fontSize ?? slide.fontSize ?? 100;
-    const lh        = typo?.lineHeight ?? slide.lineHeight ?? 1.3;
-    const fw        = typo?.fontWeight ?? slide.fontWeight ?? 400;
-    const align     = (slide.textAlign ?? "center") as CanvasTextAlign;
-    const fontSizePx = Math.round((fsScale / 100) * 5 * NDI_WIDTH / 100);
+    // Resolve the slide's COMPLETE typography via the single shared engine so
+    // the NDI frame matches the web renderer (color/font are never guessed
+    // here anymore). color & fontFamily are guaranteed defined.
+    const typo      = resolveTypography(slide.typography);
+    const fsScale   = typo.fontSize;
+    const lh        = typo.lineHeight;
+    const fw        = typo.fontWeight;
+    const align     = (typo.textAlign ?? "center") as CanvasTextAlign;
+    // Same scale formula as the kiosk (novaSizeToVw at 1920) → exact size parity.
+    const fontSizePx = Math.round(novaSizeToVw(fsScale) * NDI_WIDTH / 100);
+    // Quote the family (some — "Open Sans", "Roboto Flex" — contain spaces);
+    // sans-serif fallback keeps text visible if the font isn't packaged yet.
+    const fontStack = `"${typo.fontFamily}", sans-serif`;
 
-    ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
-    ctx.shadowBlur  = 8;
-    ctx.fillStyle   = "#FFFFFF";
-    ctx.font        = `${fw} ${fontSizePx}px sans-serif`;
+    // Honor textShadow on/off from the slide (node-canvas can't parse a CSS
+    // shadow shorthand, so we approximate: shadow present → soft dark shadow).
+    if (typo.textShadow) {
+      ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+      ctx.shadowBlur  = 8;
+    } else {
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur  = 0;
+    }
+    ctx.fillStyle   = typo.color;
+    ctx.font        = `${fw} ${fontSizePx}px ${fontStack}`;
     ctx.textAlign   = align;
     ctx.textBaseline = "middle";
 
-    const lines  = text.split("\n");
+    // Apply textTransform to match the kiosk.
+    const shown = typo.textTransform === "uppercase" ? text.toUpperCase()
+                : typo.textTransform === "lowercase" ? text.toLowerCase()
+                : text;
+    const lines  = shown.split("\n");
     const lineH  = fontSizePx * lh;
     const startY = NDI_HEIGHT / 2 - ((lines.length - 1) * lineH) / 2;
     const x      = align === "left" ? 80 : align === "right" ? NDI_WIDTH - 80 : NDI_WIDTH / 2;
@@ -275,16 +403,16 @@ export function ndiHandleSlide(slide: SlideData) {
     ctx.roundRect(bx, blockTop, bw, bh, r);
     ctx.fill();
 
-    ctx.fillStyle = "#FFFFFF";
+    ctx.fillStyle = typo.color;
     lines.forEach((line, i) => {
       ctx.fillText(line, x, startY + i * lineH);
     });
 
-    // Bible reference
+    // Bible reference — same family for fidelity, dimmed relative to the text.
     if (isBible && slide.displayReference) {
       const refSize = Math.round(fontSizePx * 0.4);
       ctx.shadowBlur = 4;
-      ctx.font       = `400 ${refSize}px sans-serif`;
+      ctx.font       = `400 ${refSize}px ${fontStack}`;
       ctx.fillStyle  = "#CCCCCC";
       ctx.textAlign  = "center";
       ctx.fillText(slide.displayReference, NDI_WIDTH / 2, NDI_HEIGHT - refSize * 2);

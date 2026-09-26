@@ -4,6 +4,9 @@ import type { DisplayInfo } from "../shared/display";
 let setupWindow: BrowserWindow | null = null;
 // Map de role -> BrowserWindow (soporta "main" y "stage")
 const outputWindows = new Map<string, BrowserWindow>();
+// Map de role -> screenId (display id) sobre el que está abierta la ventana.
+// Permite resolver el `close-screen` (que llega por screenId) al role correcto.
+const outputScreenIds = new Map<string, string>();
 
 let _outputUrl = "";
 let _preloadPath = "";
@@ -70,9 +73,13 @@ export function openOutputWindowForRole(display: DisplayInfo, role: string): Bro
 
   win.loadURL(_outputUrl);
   win.once("ready-to-show", () => win.show());
-  win.on("closed", () => { outputWindows.delete(role); });
+  win.on("closed", () => {
+    outputWindows.delete(role);
+    outputScreenIds.delete(role);
+  });
 
   outputWindows.set(role, win);
+  outputScreenIds.set(role, String(display.id));
   console.log(`[WM] Opened kiosk window for role "${role}" on display ${display.id}`);
   return win;
 }
@@ -87,6 +94,38 @@ export function createOutputWindow(loadUrl: string, preloadPath: string, display
 export function closeOutputWindow() {
   outputWindows.forEach((win) => { if (!win.isDestroyed()) win.close(); });
   outputWindows.clear();
+  outputScreenIds.clear();
+}
+
+/** Cierra la ventana de salida de un role concreto ("main" | "stage" | ...). */
+export function closeOutputWindowForRole(role: string): boolean {
+  const win = outputWindows.get(role);
+  if (win && !win.isDestroyed()) {
+    win.close(); // el listener "closed" limpia los maps
+    console.log(`[WM] Closed kiosk window for role "${role}"`);
+    return true;
+  }
+  outputWindows.delete(role);
+  outputScreenIds.delete(role);
+  console.warn(`[WM] No output window to close for role "${role}"`);
+  return false;
+}
+
+/**
+ * Cierra la ventana de salida asignada a un screenId (display id).
+ * El protocolo `close-screen` llega por screenId, así que resolvemos al role.
+ */
+export function closeOutputWindowForScreen(screenId: string): boolean {
+  let closedAny = false;
+  for (const [role, id] of outputScreenIds) {
+    if (id === String(screenId)) {
+      closedAny = closeOutputWindowForRole(role) || closedAny;
+    }
+  }
+  if (!closedAny) {
+    console.warn(`[WM] No output window mapped to screenId "${screenId}"`);
+  }
+  return closedAny;
 }
 
 export function getRoleForWebContents(webContentsId: number): string | null {

@@ -10,6 +10,9 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { LiveOutputBroadcaster } from '@/lib/broadcast'
 import { DisplayNovaBridge, DisplayNovaScreen, getGlobalBridge } from '@/lib/display-nova-bridge'
+import { resolveTypography } from '@nova/shared'
+import type { Typography } from '@nova/shared'
+import type { SongTypography } from '@/lib/typography'
 import ScreenSelector from './ScreenSelector'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
@@ -75,6 +78,39 @@ function resolveSlideFontWeight(slide: any): number | string {
     if (resolved !== null) return resolved
   }
   return 500
+}
+
+// Maps the web's snake_case SongTypography onto the shared camelCase Typography
+// contract, then lets per-slide numeric overrides win, so the fully-resolved
+// typography (color, fontFamily, textShadow, textTransform, …) can be sent to native.
+function buildResolvedTypography(
+  songTypography: SongTypography | null | undefined,
+  overrides: {
+    fontSize?: number
+    lineHeight?: number
+    letterSpacing?: number
+    fontWeight?: number | string
+  },
+): Typography {
+  const input: Partial<Typography> = {}
+  const st = songTypography
+  if (st) {
+    if (typeof st.font_family === 'string') input.fontFamily = st.font_family
+    const songWeight = typeof st.font_weight === 'number' ? st.font_weight : (typeof st.weight === 'number' ? st.weight : undefined)
+    if (typeof songWeight === 'number') input.fontWeight = songWeight
+    if (typeof st.font_size === 'number') input.fontSize = st.font_size
+    if (typeof st.line_height === 'number') input.lineHeight = st.line_height
+    if (typeof st.letter_spacing === 'number') input.letterSpacing = st.letter_spacing
+    if (typeof st.color === 'string') input.color = st.color
+    if (typeof st.shadow === 'string') input.textShadow = st.shadow
+    if (st.text_transform) input.textTransform = st.text_transform
+  }
+  // Per-slide overrides take precedence over song-level defaults.
+  if (typeof overrides.fontSize === 'number') input.fontSize = overrides.fontSize
+  if (typeof overrides.lineHeight === 'number') input.lineHeight = overrides.lineHeight
+  if (typeof overrides.letterSpacing === 'number') input.letterSpacing = overrides.letterSpacing
+  if (typeof overrides.fontWeight === 'number') input.fontWeight = overrides.fontWeight
+  return resolveTypography(input)
 }
 
 function getOutputModeLabel(mode: OutputMode): string {
@@ -270,8 +306,15 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               const stored = localStorage.getItem('current-slide')
               if (stored) {
                 const slideData = JSON.parse(stored)
-                bridge.sendSlide('main', { ...slideData, textAlign: 'center' })
-                bridge.sendSlide('stage', { reference: slideData.label, type: slideData.slideType, textAlign: 'center' })
+                const resolvedTypography = buildResolvedTypography(slideData.songTypography, {
+                  fontSize: typeof slideData.fontSize === 'number' ? slideData.fontSize : undefined,
+                  lineHeight: typeof slideData.lineHeight === 'number' ? slideData.lineHeight : undefined,
+                  letterSpacing: typeof slideData.letterSpacing === 'number' ? slideData.letterSpacing : undefined,
+                  fontWeight: typeof slideData.fontWeight === 'number' ? slideData.fontWeight : undefined,
+                })
+                const transition = transitionTypeRef.current
+                bridge.sendSlide('main', { ...slideData, type: slideData.slideType, typography: resolvedTypography, textAlign: 'center', transitionType: transition, transition })
+                bridge.sendSlide('stage', { reference: slideData.label, type: slideData.slideType, typography: resolvedTypography, textAlign: 'center', transitionType: transition, transition })
               }
             } catch { /* ignore */ }
           }
@@ -462,6 +505,16 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
         ...currentSlide,
         songTypography: song?.typography || null,
       })
+      // Full, resolved typography for the native bridge payloads (both song and bible verse).
+      const resolvedTypography = buildResolvedTypography(song?.typography, {
+        fontSize,
+        lineHeight,
+        letterSpacing,
+        fontWeight,
+      })
+      const bibleTypography = buildResolvedTypography(song?.typography, {
+        fontSize: bibleFontSize,
+      })
       const slideData = {
         slideId: currentSlide.id,
         songId: song?.id || null,
@@ -513,6 +566,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
           lastVerseTextRef.current = '' // will be filled by loadVerseText effect
           lastSlideForBridgeRef.current = {
             main: {
+              typography: bibleTypography,
               type: 'bible_verse',
               verseText: '',
               displayReference: verseContent?.displayReference || currentSlide.label,
@@ -521,8 +575,10 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               textAlign: 'center',
               contentPadding: 80,
               transitionType,
+              transition: transitionType,
             },
             stage: {
+              typography: bibleTypography,
               type: 'bible_verse',
               verseText: '',
               displayReference: verseContent?.displayReference || currentSlide.label,
@@ -531,11 +587,13 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               textAlign: 'center',
               contentPadding: 80,
               transitionType,
+              transition: transitionType,
             },
           }
         } else {
           lastSlideForBridgeRef.current = {
             main: {
+              typography: resolvedTypography,
               content: currentSlide.content,
               reference: currentSlide.label,
               type: currentSlide.type,
@@ -547,8 +605,10 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               songTypography: song?.typography || null,
               contentPadding: 80,
               transitionType,
+              transition: transitionType,
             },
             stage: {
+              typography: resolvedTypography,
               content: currentSlide.content,
               reference: currentSlide.label,
               type: currentSlide.type,
@@ -559,6 +619,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               textAlign: 'center',
               contentPadding: 80,
               transitionType,
+              transition: transitionType,
             },
           }
         }
@@ -586,6 +647,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
           const verseContent = parseBibleVerseSlideContent(currentSlide)
           lastSlideForBridgeRef.current = {
             main: {
+              typography: bibleTypography,
               type: 'bible_verse',
               verseText: '',
               displayReference: verseContent?.displayReference || currentSlide.label,
@@ -594,8 +656,10 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               textAlign: 'center',
               contentPadding: 80,
               transitionType,
+              transition: transitionType,
             },
             stage: {
+              typography: bibleTypography,
               type: 'bible_verse',
               verseText: '',
               displayReference: verseContent?.displayReference || currentSlide.label,
@@ -604,11 +668,13 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               textAlign: 'center',
               contentPadding: 80,
               transitionType,
+              transition: transitionType,
             },
           }
         } else {
           lastSlideForBridgeRef.current = {
             main: {
+              typography: resolvedTypography,
               content: currentSlide.content,
               reference: currentSlide.label,
               type: currentSlide.type,
@@ -620,8 +686,10 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               songTypography: song?.typography || null,
               contentPadding: 80,
               transitionType,
+              transition: transitionType,
             },
             stage: {
+              typography: resolvedTypography,
               content: currentSlide.content,
               reference: currentSlide.label,
               type: currentSlide.type,
@@ -632,6 +700,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               textAlign: 'center',
               contentPadding: 80,
               transitionType,
+              transition: transitionType,
             },
           }
         }

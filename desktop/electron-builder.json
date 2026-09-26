@@ -10,7 +10,8 @@
     "package.json"
   ],
   "extraResources": [
-    { "from": "assets/nova.png", "to": "assets/nova.png" }
+    { "from": "assets/nova.png", "to": "assets/nova.png" },
+    { "from": "assets/fonts", "to": "assets/fonts" }
   ],
   "directories": {
     "buildResources": "build"

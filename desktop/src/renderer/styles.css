@@ -1,3 +1,46 @@
+/* ─── Fuentes empaquetadas (fidelidad compartida con la web) ──────────────────
+ * Los archivos los provee otra lane; se referencian por nombre relativo a
+ * desktop/src/renderer/ → ../../assets/fonts/. Cada familia usa un archivo
+ * variable (rango de peso 100–900). font-display: swap evita FOIT.
+ * Familias soportadas = SUPPORTED_FONTS de @nova/shared:
+ *   Inter, Poppins, Montserrat, "Roboto Flex", "Open Sans".
+ */
+@font-face {
+  font-family: "Inter";
+  src: url("../../assets/fonts/Inter-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Poppins";
+  src: url("../../assets/fonts/Poppins-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Montserrat";
+  src: url("../../assets/fonts/Montserrat-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Roboto Flex";
+  src: url("../../assets/fonts/RobotoFlex-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Open Sans";
+  src: url("../../assets/fonts/OpenSans-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   font-family: "Inter", "Segoe UI", system-ui, sans-serif;
   color: #f6f6f6;
@@ -176,9 +219,18 @@ button.primary:disabled {
   letter-spacing: 0.05em;
 }
 
+/* Wrapper de fade: anima la opacidad del contenido del slide (no del fondo). */
+.slide-fade {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .slide-text {
   margin: 0;
-  color: #ffffff;
+  /* color viene del estilo inline (typography.color) — NO se fuerza blanco aquí. */
   white-space: pre-wrap;
   word-break: break-word;
 }
