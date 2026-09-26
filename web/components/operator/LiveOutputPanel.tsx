@@ -313,8 +313,8 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
                   fontWeight: typeof slideData.fontWeight === 'number' ? slideData.fontWeight : undefined,
                 })
                 const transition = transitionTypeRef.current
-                bridge.sendSlide('main', { ...slideData, ...resolvedTypography, textAlign: 'center', transitionType: transition, transition })
-                bridge.sendSlide('stage', { reference: slideData.label, type: slideData.slideType, ...resolvedTypography, textAlign: 'center', transitionType: transition, transition })
+                bridge.sendSlide('main', { ...slideData, typography: resolvedTypography, textAlign: 'center', transitionType: transition, transition })
+                bridge.sendSlide('stage', { reference: slideData.label, type: slideData.slideType, typography: resolvedTypography, textAlign: 'center', transitionType: transition, transition })
               }
             } catch { /* ignore */ }
           }
@@ -566,7 +566,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
           lastVerseTextRef.current = '' // will be filled by loadVerseText effect
           lastSlideForBridgeRef.current = {
             main: {
-              ...bibleTypography,
+              typography: bibleTypography,
               type: 'bible_verse',
               verseText: '',
               displayReference: verseContent?.displayReference || currentSlide.label,
@@ -578,7 +578,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               transition: transitionType,
             },
             stage: {
-              ...bibleTypography,
+              typography: bibleTypography,
               type: 'bible_verse',
               verseText: '',
               displayReference: verseContent?.displayReference || currentSlide.label,
@@ -593,7 +593,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
         } else {
           lastSlideForBridgeRef.current = {
             main: {
-              ...resolvedTypography,
+              typography: resolvedTypography,
               content: currentSlide.content,
               reference: currentSlide.label,
               type: currentSlide.type,
@@ -608,7 +608,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               transition: transitionType,
             },
             stage: {
-              ...resolvedTypography,
+              typography: resolvedTypography,
               content: currentSlide.content,
               reference: currentSlide.label,
               type: currentSlide.type,
@@ -647,7 +647,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
           const verseContent = parseBibleVerseSlideContent(currentSlide)
           lastSlideForBridgeRef.current = {
             main: {
-              ...bibleTypography,
+              typography: bibleTypography,
               type: 'bible_verse',
               verseText: '',
               displayReference: verseContent?.displayReference || currentSlide.label,
@@ -659,7 +659,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               transition: transitionType,
             },
             stage: {
-              ...bibleTypography,
+              typography: bibleTypography,
               type: 'bible_verse',
               verseText: '',
               displayReference: verseContent?.displayReference || currentSlide.label,
@@ -674,7 +674,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
         } else {
           lastSlideForBridgeRef.current = {
             main: {
-              ...resolvedTypography,
+              typography: resolvedTypography,
               content: currentSlide.content,
               reference: currentSlide.label,
               type: currentSlide.type,
@@ -689,7 +689,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
               transition: transitionType,
             },
             stage: {
-              ...resolvedTypography,
+              typography: resolvedTypography,
               content: currentSlide.content,
               reference: currentSlide.label,
               type: currentSlide.type,
