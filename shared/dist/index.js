@@ -21,3 +21,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./contract"), exports);
 __exportStar(require("./protocol"), exports);
 __exportStar(require("./typography"), exports);
+__exportStar(require("./validate"), exports);

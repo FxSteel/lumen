@@ -10,6 +10,7 @@ declare global {
       onSongBackground: (callback: (bg: SongBackground) => void) => void;
       onDisplayMedia: (callback: (media: DisplayMedia) => void) => void;
       onPreloadMedia: (callback: (media: DisplayMedia) => void) => void;
+      resolveAsset: (url: string) => Promise<string>;
       signalReady: () => void;
       onStageTime: (callback: (data: StageTime) => void) => void;
       onStageMessage: (callback: (data: StageMessage) => void) => void;
