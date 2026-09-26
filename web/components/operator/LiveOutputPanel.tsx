@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 import { LiveOutputBroadcaster } from '@/lib/broadcast'
 import { DisplayNovaBridge, DisplayNovaScreen, getGlobalBridge } from '@/lib/display-nova-bridge'
 import { resolveTypography } from '@nova/shared'
-import type { Typography } from '@nova/shared'
+import type { Typography, NativeState } from '@nova/shared'
 import type { SongTypography } from '@/lib/typography'
 import ScreenSelector from './ScreenSelector'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -179,6 +179,9 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
 
   const [displayNovaConnected, setDisplayNovaConnected] = useState(false)
   const [displayNovaScreens, setDisplayNovaScreens] = useState<DisplayNovaScreen[]>([])
+  // Latest native health reported by Display-Nova via `state` message.
+  // null = state not yet received (unknown → UI degrades gracefully).
+  const [displayNovaState, setDisplayNovaState] = useState<NativeState | null>(null)
   
   // Pantalla Principal state
   const [outputMode, setOutputMode] = useState<OutputMode>('clear')
@@ -281,6 +284,8 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
 
     bridge.onConnectionChange = (connected) => {
       setDisplayNovaConnected(connected)
+      // Drop stale native health on disconnect so NDI status reverts to "unknown".
+      if (!connected) setDisplayNovaState(null)
       if (connected) {
         // Sync current state to Display-Nova on connect
         bridge.sendBackground(lastBackgroundRef.current.backgroundType, lastBackgroundRef.current.backgroundUrl)
@@ -327,6 +332,8 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
       }
     }
     bridge.onScreensDetected = (screens) => setDisplayNovaScreens(screens)
+    // Surface real native health (version + whether NDI is actually available).
+    bridge.onState = (state) => setDisplayNovaState(state)
     bridgeRef.current = bridge
 
     // Sync initial connection state
@@ -340,6 +347,7 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
       // Clear callbacks but keep singleton alive (BibleBrowser may still use it)
       bridge.onConnectionChange = undefined
       bridge.onScreensDetected = undefined
+      bridge.onState = undefined
       bridgeRef.current = null
     }
   }, [])
@@ -1091,6 +1099,8 @@ export default function LiveOutputPanel({ song, slides }: LiveOutputPanelProps) 
       <ScreenSelector
         displayNovaConnected={displayNovaConnected}
         displayNovaScreens={displayNovaScreens}
+        ndiAvailable={displayNovaState?.ndiAvailable}
+        nativeVersion={displayNovaState?.version}
         onDisplayNovaAssignScreen={(screenId, role) => {
           if (role !== 'none') {
             bridgeRef.current?.assignScreen(screenId, role)
